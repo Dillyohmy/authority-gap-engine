@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: authgap
+      POSTGRES_USER: authgap
+      POSTGRES_PASSWORD: authgap_local
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authgap"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: "4000"
+      DATABASE_URL: "postgresql://authgap:authgap_local@postgres:5432/authgap"
+      REDIS_URL: "redis://redis:6379"
+      AI_PROVIDER: "${AI_PROVIDER:-none}"
+      AI_MODEL: "${AI_MODEL:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      SCAN_TIMEOUT_MS: "${SCAN_TIMEOUT_MS:-60000}"
+      MAX_PAGES_PER_SCAN: "${MAX_PAGES_PER_SCAN:-5}"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-*}"
+    command: ["node", "dist/server.js"]
+
+  worker:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://authgap:authgap_local@postgres:5432/authgap"
+      REDIS_URL: "redis://redis:6379"
+      AI_PROVIDER: "${AI_PROVIDER:-none}"
+      AI_MODEL: "${AI_MODEL:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      SCAN_TIMEOUT_MS: "${SCAN_TIMEOUT_MS:-60000}"
+      MAX_PAGES_PER_SCAN: "${MAX_PAGES_PER_SCAN:-5}"
+    command: ["node", "dist/workers/scanWorker.js"]
+
+volumes:
+  pgdata:
+  redisdata:

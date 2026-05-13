@@ -1,0 +1,30 @@
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import { scanRouter } from "./routes/scan.js";
+import { leadRouter } from "./routes/lead.js";
+import { eventRouter } from "./routes/event.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+
+const app = express();
+const corsOrigins = (process.env.CORS_ORIGIN || "*")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(helmet());
+app.use(cors({ origin: corsOrigins.includes("*") ? "*" : corsOrigins }));
+app.use(express.json());
+
+// Health check
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+// Routes
+app.use("/api/scan", scanRouter);
+app.use("/api/lead", leadRouter);
+app.use("/api/event", eventRouter);
+
+// Global error handler
+app.use(errorHandler);
+
+export { app };

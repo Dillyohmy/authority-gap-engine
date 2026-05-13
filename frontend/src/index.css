@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* I Have Design — Enterprise Visual System
+   All colors are HSL for Tailwind compatibility.
+   IHD tokens mapped from the governance spec.
+*/
+
+@layer base {
+  :root {
+    /* IHD Primary: #6CB43C → hsl(96, 51%, 47%) */
+    --primary: 96 51% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Backgrounds */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 12%;
+
+    /* Cards: white */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 12%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 12%;
+
+    /* Secondary bg: #F4F6F3 → hsl(105, 12%, 96%) */
+    --secondary: 105 12% 96%;
+    --secondary-foreground: 0 0% 12%;
+
+    /* Muted: light gray text #6E6E6E → hsl(0, 0%, 43%) */
+    --muted: 105 12% 96%;
+    --muted-foreground: 0 0% 43%;
+
+    /* Accent: soft green tint */
+    --accent: 105 12% 96%;
+    --accent-foreground: 96 51% 32%;
+
+    /* Destructive / Critical: #C0392B → hsl(6, 63%, 46%) */
+    --destructive: 6 63% 46%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border: #E5E7EB → hsl(220, 13%, 91%) */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 96 51% 47%;
+
+    --radius: 0.375rem;
+
+    /* Surface: #F4F6F3 */
+    --surface: 105 12% 96%;
+    --surface-foreground: 0 0% 12%;
+
+    /* IHD Semantic Colors */
+    --success: 114 52% 37%;
+    --warning: 46 100% 42%;
+    --info: 212 47% 44%;
+    --score-high: 114 52% 37%;
+    --score-medium: 46 100% 42%;
+    --score-low: 6 63% 46%;
+
+    /* IHD Structural Colors */
+    /* Dark green for table headers: #74A060 → hsl(100, 26%, 50%) */
+    --ihd-dark-green: 100 26% 50%;
+    /* Dark gray for sidebar/nav: #6C6C74 → hsl(240, 4%, 44%) */
+    --ihd-nav: 240 4% 44%;
+    /* Light gray for notes: #7C7C7C → hsl(0, 0%, 49%) */
+    --ihd-note: 0 0% 49%;
+
+    --shadow-card: 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-elevated: 0 6px 16px rgba(0,0,0,0.08);
+
+    /* Sidebar */
+    --sidebar-background: 240 4% 44%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 96 51% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 38%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 4% 38%;
+    --sidebar-ring: 96 51% 47%;
+  }
+
+  .dark {
+    --background: 0 0% 8%;
+    --foreground: 0 0% 92%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 92%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 96 51% 47%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 92%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 96 51% 60%;
+    --destructive: 6 63% 35%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 96 51% 47%;
+    --surface: 0 0% 12%;
+    --surface-foreground: 0 0% 92%;
+    --sidebar-background: 240 4% 14%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 96 51% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 20%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 240 4% 20%;
+    --sidebar-ring: 96 51% 47%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: Arial, sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: Arial, sans-serif;
+    font-weight: 800;
+  }
+}
