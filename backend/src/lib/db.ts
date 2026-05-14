@@ -1,4 +1,3 @@
-import WebSocket from "ws";
 import { createClient } from "@supabase/supabase-js";
 import { requireEnv } from "./env.js";
 
@@ -7,7 +6,6 @@ const SUPABASE_URL = requireEnv([
   "VITE_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
 ]);
-
 const SUPABASE_SERVICE_KEY = requireEnv([
   "SUPABASE_SERVICE_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
@@ -15,15 +13,8 @@ const SUPABASE_SERVICE_KEY = requireEnv([
 
 /**
  * Server-side Supabase client using service role key.
- * Full access, no RLS restrictions.
+ * Full access — no RLS restrictions.
  */
-export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-  realtime: {
-    transport: WebSocket as any,
-  },
+export const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  auth: { persistSession: false },
 });
-
-/**
- * Backward compatible export for route files that import { db }.
- */
-export const db = supabase;
