@@ -2,7 +2,6 @@ FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 COPY package*.json ./
@@ -16,6 +15,8 @@ COPY . .
 RUN npm run build
 
 RUN npm prune --omit=dev
+
+ENV NODE_ENV=production
 
 EXPOSE 4000
 
