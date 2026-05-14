@@ -1,12 +1,5 @@
-import WebSocket from "ws";
 import { createClient } from "@supabase/supabase-js";
 import { requireEnv } from "./env.js";
-
-/**
- * Supabase Realtime needs a WebSocket constructor.
- * Render's current Node 20 Playwright image does not provide one globally.
- */
-(globalThis as any).WebSocket = WebSocket;
 
 const SUPABASE_URL = requireEnv([
   "SUPABASE_URL",
@@ -27,9 +20,6 @@ export const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: {
     persistSession: false,
     autoRefreshToken: false,
-  },
-  realtime: {
-    transport: WebSocket as any,
   },
 });
 
