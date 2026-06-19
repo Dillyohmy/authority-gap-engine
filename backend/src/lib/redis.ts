@@ -7,7 +7,8 @@ export const REDIS_ENABLED = process.env.REDIS_ENABLED !== "false";
 const redisOptions = {
   lazyConnect: true,
   maxRetriesPerRequest: null, // Required by BullMQ
-  retryStrategy: () => null,
+  retryStrategy: (times: number) => Math.min(times * 500, 5000), // retry with backoff up to 5s
+  enableOfflineQueue: true,
 };
 
 function logRedisError(err: Error) {
