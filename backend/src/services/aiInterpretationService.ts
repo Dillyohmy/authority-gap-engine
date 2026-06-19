@@ -7,17 +7,17 @@
  * - Strategic implications
  * - Recommended directions
  *
- * Uses OpenAI (GPT-4o) or compatible API.
+ * Uses Anthropic Claude API (temporarily replacing OpenAI for testing).
  */
 
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import type { SiteExtraction } from "./extractService.js";
 import type { RuleEngineResult } from "./ruleEngine.js";
 import type { ScanScores } from "../types/scanReport.js";
 import { logger } from "../lib/logger.js";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const MODEL = process.env.AI_MODEL || "gpt-4o";
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const MODEL = "claude-opus-4-8";
 
 export interface AIInterpretation {
   executive_summary: string;
@@ -46,27 +46,20 @@ export async function generateInterpretation(
   const prompt = buildPrompt(websiteUrl, clinicType, location, extraction, rules, scores);
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await anthropic.messages.create({
       model: MODEL,
-      messages: [
-        {
-          role: "system",
-          content: `You are a healthcare digital marketing analyst for Authority Gap Engine™. 
-You produce precise, data-grounded analysis for medical practices. 
-Your tone is professional, authoritative, and strategic — never salesy.
-Always respond with valid JSON matching the requested schema.`,
-        },
-        { role: "user", content: prompt },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.3,
       max_tokens: 3000,
+      system: `You are a healthcare digital marketing analyst for Authority Gap Engine™.
+You produce precise, data-grounded analysis for medical practices.
+Your tone is professional, authoritative, and strategic — never salesy.
+Always respond with valid JSON matching the requested schema. Output only JSON, no markdown fences.`,
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) throw new Error("Empty AI response");
+    const block = response.content[0];
+    if (!block || block.type !== "text") throw new Error("Empty AI response");
 
-    return JSON.parse(content) as AIInterpretation;
+    return JSON.parse(block.text) as AIInterpretation;
   } catch (err) {
     logger.error(err, "AI interpretation failed, using fallback");
     return getFallbackInterpretation(websiteUrl, clinicType, rules);
