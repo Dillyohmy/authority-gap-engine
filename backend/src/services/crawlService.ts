@@ -48,6 +48,9 @@ export async function crawlWebsite(websiteUrl: string): Promise<CrawlResult> {
       timeout: TIMEOUT,
     });
 
+    // Wait for any client-side redirects to settle
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+
     const html = await page.content();
     const title = await page.title();
     const metaDescription = await page
