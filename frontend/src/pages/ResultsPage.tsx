@@ -66,6 +66,30 @@ const ResultsPage = () => {
     return () => { cancelled = true; };
   }, [jobId]);
 
+  // Auto-save scan to Supabase when report loads and user is logged in
+  useEffect(() => {
+    if (!report || !user) return;
+    supabase.from("scans").insert([{
+      user_id: user.id,
+      website_url: report.input.website_url,
+      clinic_type: report.input.clinic_type,
+      location: report.input.location,
+      authority_gap_score: report.scores.authority_gap_score,
+      visibility_score: report.scores.visibility_score,
+      conversion_score: report.scores.conversion_score,
+      opportunity_score: report.scores.opportunity_score,
+      estimated_revenue_low: report.estimated_revenue_low,
+      estimated_revenue_high: report.estimated_revenue_high,
+      findings_json: {
+        visibility: report.visibility.findings,
+        conversion: report.conversion.findings,
+        topFixes: report.top_fixes,
+      },
+    }]).then(({ error }) => {
+      if (error) console.warn("Could not auto-save scan:", error.message);
+    });
+  }, [report, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Track teaser view when report loads
   useEffect(() => {
     if (report && !unlocked) {
