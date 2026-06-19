@@ -14,6 +14,10 @@ import DashboardPage from "./pages/DashboardPage.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import AdminLeadsPage from "./pages/AdminLeadsPage.tsx";
 import StrategyCallPage from "./pages/StrategyCallPage.tsx";
+import ProjectsPage from "./pages/ProjectsPage.tsx";
+import NewProjectPage from "./pages/NewProjectPage.tsx";
+import IntakePage from "./pages/IntakePage.tsx";
+import IntakeReviewPage from "./pages/IntakeReviewPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -35,6 +39,10 @@ const App = () => (
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/admin/leads" element={<AdminLeadsPage />} />
             <Route path="/strategy-call" element={<StrategyCallPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/new" element={<NewProjectPage />} />
+            <Route path="/projects/:projectId/intake" element={<IntakePage />} />
+            <Route path="/projects/:projectId/review" element={<IntakeReviewPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, ExternalLink, Shield, BarChart3, Search, TrendingUp, Calendar, MapPin, Activity, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import { ArrowRight, ExternalLink, Shield, BarChart3, Search, TrendingUp, Calendar, MapPin, Activity, ArrowUpRight, ArrowDownRight, Minus, FolderOpen } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface ScanRow {
@@ -102,12 +102,20 @@ const DashboardPage = () => {
               <h1 className="text-[20px] sm:text-[24px] font-extrabold leading-tight">Authority Gap Dashboard</h1>
               <p className="text-[12px] opacity-40 mt-1 font-medium">{scans.length} diagnostic {scans.length === 1 ? "report" : "reports"} generated</p>
             </div>
-            <Link to="/scan">
-              <Button size="sm" className="gap-2 rounded-lg font-bold text-[12px] px-5 h-10">
-                <Search className="h-3.5 w-3.5" />
-                New Scan
-              </Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link to="/projects">
+                <Button size="sm" variant="outline" className="gap-2 rounded-lg font-bold text-[12px] px-4 h-10 bg-white/10 border-white/20 text-white hover:bg-white/20">
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Projects
+                </Button>
+              </Link>
+              <Link to="/scan">
+                <Button size="sm" className="gap-2 rounded-lg font-bold text-[12px] px-5 h-10">
+                  <Search className="h-3.5 w-3.5" />
+                  New Scan
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { scanRouter } from "./routes/scan.js";
 import { leadRouter } from "./routes/lead.js";
 import { eventRouter } from "./routes/event.js";
+import { projectRouter } from "./routes/projects.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -23,6 +24,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/scan", scanRouter);
 app.use("/api/lead", leadRouter);
 app.use("/api/event", eventRouter);
+app.use("/api/projects", projectRouter);
 
 // Global error handler
 app.use(errorHandler);
