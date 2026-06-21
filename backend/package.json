@@ -14,7 +14,9 @@
     "worker:competitor-crawl": "tsx src/workers/competitorCrawlWorker.ts",
     "worker:competitor-crawl:dev": "tsx watch src/workers/competitorCrawlWorker.ts",
     "worker:competitor-analysis": "tsx src/workers/competitorAnalysisWorker.ts",
-    "worker:competitor-analysis:dev": "tsx watch src/workers/competitorAnalysisWorker.ts"
+    "worker:competitor-analysis:dev": "tsx watch src/workers/competitorAnalysisWorker.ts",
+    "worker:full-report": "tsx src/workers/fullReportWorker.ts",
+    "worker:full-report:dev": "tsx watch src/workers/fullReportWorker.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",

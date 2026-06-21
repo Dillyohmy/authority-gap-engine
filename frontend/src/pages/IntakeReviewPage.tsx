@@ -23,7 +23,10 @@ import {
   Send,
   Activity,
   Edit2,
+  BarChart3,
+  Loader2,
 } from "lucide-react";
+import { reportsApi } from "@/lib/reportsApi";
 import { toast } from "sonner";
 
 const IntakeReviewPage = () => {
@@ -42,6 +45,7 @@ const IntakeReviewPage = () => {
   const [missingCompetitorItems, setMissingCompetitorItems] = useState<{ label: string; description: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
@@ -76,6 +80,18 @@ const IntakeReviewPage = () => {
     } catch {
       toast.error("Failed to update status. Please try again.");
       setSubmitting(false);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    if (!projectId) return;
+    setGeneratingReport(true);
+    try {
+      const result = await reportsApi.startFull(projectId);
+      navigate(`/projects/${projectId}/reports/${result.report_id}`);
+    } catch (e) {
+      toast.error((e as Error).message || "Failed to start report generation.");
+      setGeneratingReport(false);
     }
   };
 
@@ -146,18 +162,25 @@ const IntakeReviewPage = () => {
                   {optional.length > 0 && ` ${optional.length} optional ${optional.length === 1 ? "item" : "items"} can still be added to improve the audit.`}
                 </p>
               </div>
-              <Button
-                onClick={handleMarkReady}
-                disabled={submitting || project?.status === "ready"}
-                className="gap-2 font-bold text-[12px] flex-shrink-0"
-              >
-                <Send className="h-3.5 w-3.5" />
-                {project?.status === "ready"
-                  ? "Already Submitted"
-                  : submitting
-                  ? "Submitting…"
-                  : "Mark Ready for Audit"}
-              </Button>
+              <div className="flex flex-col gap-2 flex-shrink-0">
+                <Button
+                  onClick={handleGenerateReport}
+                  disabled={generatingReport}
+                  className="gap-2 font-bold text-[12px] bg-ihd-dark-green hover:bg-ihd-dark-green/90"
+                >
+                  {generatingReport ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BarChart3 className="h-3.5 w-3.5" />}
+                  {generatingReport ? "Starting…" : "Generate Report"}
+                </Button>
+                <Button
+                  onClick={handleMarkReady}
+                  disabled={submitting || project?.status === "ready"}
+                  variant="outline"
+                  className="gap-2 font-bold text-[12px]"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {project?.status === "ready" ? "Already Submitted" : submitting ? "Submitting…" : "Mark Ready"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -427,10 +450,20 @@ const IntakeReviewPage = () => {
 
         {/* Bottom submit */}
         {readyForAudit && project?.status !== "ready" && (
-          <div className="pb-6">
+          <div className="pb-6 space-y-3">
+            <Button
+              onClick={handleGenerateReport}
+              disabled={generatingReport || submitting}
+              size="lg"
+              className="w-full h-12 font-bold text-[14px] gap-2 bg-ihd-dark-green hover:bg-ihd-dark-green/90"
+            >
+              {generatingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart3 className="h-4 w-4" />}
+              {generatingReport ? "Starting Report…" : "Generate Full Authority Gap Report"}
+            </Button>
             <Button
               onClick={handleMarkReady}
               disabled={submitting}
+              variant="outline"
               size="lg"
               className="w-full h-12 font-bold text-[14px] gap-2"
             >
