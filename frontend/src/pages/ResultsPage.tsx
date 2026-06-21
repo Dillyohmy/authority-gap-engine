@@ -31,6 +31,7 @@ const ResultsPage = () => {
   const reportRef = useRef<HTMLDivElement>(null);
 
   const jobId = params.get("jobId") || "";
+  const scanId = params.get("scanId") || "";
 
   const [report, setReport] = useState<ScanReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,22 +40,63 @@ const ResultsPage = () => {
   const [unlocked, setUnlocked] = useState(false);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
 
-  // Fetch report from backend
+  // Fetch report — from backend by jobId, or from Supabase by scanId (dashboard revisit)
   useEffect(() => {
-    if (!jobId) {
-      setFetchError("No scan job found. Please start a new scan.");
-      setLoading(false);
-      return;
-    }
-
     let cancelled = false;
+
     const fetchReport = async () => {
+      // Path 1: revisit from dashboard — load report_json directly from Supabase
+      if (scanId && !jobId) {
+        try {
+          const { data, error } = await supabase
+            .from("scans")
+            .select("report_json, job_id")
+            .eq("id", scanId)
+            .single();
+
+          if (cancelled) return;
+
+          if (error || !data) {
+            setFetchError("Report not found.");
+            setLoading(false);
+            return;
+          }
+
+          if (data.report_json) {
+            setReport(data.report_json as ScanReport);
+            setUnlocked(true); // already saved — show full report
+            setLoading(false);
+            return;
+          }
+
+          // report_json not stored yet — fall back to fetching by job_id
+          if (data.job_id) {
+            const result = await getScanResult(data.job_id);
+            if (!cancelled) { setReport(result); setUnlocked(true); setLoading(false); }
+            return;
+          }
+
+          setFetchError("Report data not available for this scan.");
+          setLoading(false);
+        } catch (err) {
+          if (!cancelled) {
+            setFetchError(err instanceof Error ? err.message : "Could not load report.");
+            setLoading(false);
+          }
+        }
+        return;
+      }
+
+      // Path 2: normal flow — load from backend by jobId
+      if (!jobId) {
+        setFetchError("No scan job found. Please start a new scan.");
+        setLoading(false);
+        return;
+      }
+
       try {
         const data = await getScanResult(jobId);
-        if (!cancelled) {
-          setReport(data);
-          setLoading(false);
-        }
+        if (!cancelled) { setReport(data); setLoading(false); }
       } catch (err) {
         if (!cancelled) {
           setFetchError(err instanceof Error ? err.message : "Could not load report data.");
@@ -62,9 +104,10 @@ const ResultsPage = () => {
         }
       }
     };
+
     fetchReport();
     return () => { cancelled = true; };
-  }, [jobId]);
+  }, [jobId, scanId]);
 
   // Auto-save scan to Supabase when report loads and user is logged in
   useEffect(() => {
