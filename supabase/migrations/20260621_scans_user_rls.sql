@@ -25,14 +25,20 @@ alter table scans
 alter table scans enable row level security;
 
 -- 6. Allow logged-in users to insert their own scans
-create policy "Users can insert their own scans"
-  on scans for insert
-  with check (auth.uid() = user_id);
+do $$ begin
+  create policy "Users can insert their own scans"
+    on scans for insert
+    with check (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
 
 -- 7. Allow logged-in users to read their own scans
-create policy "Users can read their own scans"
-  on scans for select
-  using (auth.uid() = user_id);
+do $$ begin
+  create policy "Users can read their own scans"
+    on scans for select
+    using (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
 
 -- 8. Allow backend service role to do anything (bypasses RLS by default, no policy needed)
 
