@@ -4,8 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, ExternalLink, Shield, BarChart3, Search, TrendingUp, Calendar, MapPin, Activity, ArrowUpRight, ArrowDownRight, Minus, FolderOpen } from "lucide-react";
+import { ArrowRight, ExternalLink, Shield, BarChart3, Search, TrendingUp, Calendar, MapPin, Activity, ArrowUpRight, ArrowDownRight, Minus, FolderOpen, Trash2, Archive, ArchiveRestore, MoreHorizontal } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { toast } from "@/components/ui/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ScanRow {
   id: string;
@@ -16,12 +24,14 @@ interface ScanRow {
   visibility_score: number;
   conversion_score: number;
   created_at: string;
+  archived_at: string | null;
 }
 
 const DashboardPage = () => {
   const { user } = useAuth();
   const [scans, setScans] = useState<ScanRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -31,7 +41,7 @@ const DashboardPage = () => {
     const fetchScans = async () => {
       const { data } = await supabase
         .from("scans")
-        .select("id, website_url, clinic_type, location, authority_gap_score, visibility_score, conversion_score, created_at")
+        .select("id, website_url, clinic_type, location, authority_gap_score, visibility_score, conversion_score, created_at, archived_at")
         .order("created_at", { ascending: false });
       setScans(data || []);
       setLoading(false);
@@ -39,12 +49,39 @@ const DashboardPage = () => {
     fetchScans();
   }, [user]);
 
+  const handleArchive = async (scan: ScanRow) => {
+    const isArchived = !!scan.archived_at;
+    const { error } = await supabase
+      .from("scans")
+      .update({ archived_at: isArchived ? null : new Date().toISOString() })
+      .eq("id", scan.id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setScans((prev) => prev.map((s) => s.id === scan.id ? { ...s, archived_at: isArchived ? null : new Date().toISOString() } : s));
+      toast({ title: isArchived ? "Scan restored" : "Scan archived" });
+    }
+  };
+
+  const handleDelete = async (scan: ScanRow) => {
+    if (!confirm(`Permanently delete the scan for ${scan.website_url}? This cannot be undone.`)) return;
+    const { error } = await supabase.from("scans").delete().eq("id", scan.id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setScans((prev) => prev.filter((s) => s.id !== scan.id));
+      toast({ title: "Scan deleted" });
+    }
+  };
+
+  const visibleScans = scans.filter((s) => showArchived ? !!s.archived_at : !s.archived_at);
+  const archivedCount = scans.filter((s) => !!s.archived_at).length;
+
   // Build delta map: for each scan, find the previous scan of the same website
   const deltaMap = useMemo(() => {
     const map = new Map<string, number | null>();
-    // Group by website_url, ordered newest first (already sorted)
     const byUrl = new Map<string, ScanRow[]>();
-    for (const s of scans) {
+    for (const s of visibleScans) {
       const arr = byUrl.get(s.website_url) || [];
       arr.push(s);
       byUrl.set(s.website_url, arr);
@@ -60,7 +97,7 @@ const DashboardPage = () => {
 
   // Chart data: all scans ordered by date ascending
   const chartData = useMemo(() => {
-    return [...scans]
+    return [...visibleScans]
       .reverse()
       .map((s) => ({
         date: new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -76,8 +113,8 @@ const DashboardPage = () => {
   const getScoreLabel = (s: number) =>
     s >= 75 ? "Strong" : s >= 55 ? "Moderate" : s >= 35 ? "Weak" : "Critical";
 
-  const avgScore = scans.length > 0
-    ? Math.round(scans.reduce((a, b) => a + b.authority_gap_score, 0) / scans.length)
+  const avgScore = visibleScans.length > 0
+    ? Math.round(visibleScans.reduce((a, b) => a + b.authority_gap_score, 0) / visibleScans.length)
     : 0;
 
   if (loading) {
@@ -100,7 +137,7 @@ const DashboardPage = () => {
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] opacity-50 font-semibold mb-1.5">Intelligence Workspace</p>
               <h1 className="text-[20px] sm:text-[24px] font-extrabold leading-tight">Authority Gap Dashboard</h1>
-              <p className="text-[12px] opacity-40 mt-1 font-medium">{scans.length} diagnostic {scans.length === 1 ? "report" : "reports"} generated</p>
+              <p className="text-[12px] opacity-40 mt-1 font-medium">{visibleScans.length} diagnostic {visibleScans.length === 1 ? "report" : "reports"} {showArchived ? "archived" : "generated"}</p>
             </div>
             <div className="flex gap-2">
               <Link to="/projects">
@@ -122,12 +159,12 @@ const DashboardPage = () => {
 
       <div className="container max-w-5xl px-4 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* KPI summary */}
-        {scans.length > 0 && (
+        {visibleScans.length > 0 && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <Card className="shadow-elevated border-0 rounded-xl">
               <CardContent className="p-4 sm:p-5">
                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.15em]">Total Scans</p>
-                <p className="text-[24px] font-extrabold text-foreground mt-1">{scans.length}</p>
+                <p className="text-[24px] font-extrabold text-foreground mt-1">{visibleScans.length}</p>
                 <p className="text-[11px] text-muted-foreground/60 mt-1">Diagnostics completed</p>
               </CardContent>
             </Card>
@@ -141,15 +178,15 @@ const DashboardPage = () => {
             <Card className="shadow-elevated border-0 rounded-xl">
               <CardContent className="p-4 sm:p-5">
                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.15em]">Latest Scan</p>
-                <p className="text-[14px] font-bold text-foreground mt-1 truncate">{scans[0].website_url}</p>
-                <p className="text-[11px] text-muted-foreground/60 mt-1">{new Date(scans[0].created_at).toLocaleDateString()}</p>
+                <p className="text-[14px] font-bold text-foreground mt-1 truncate">{visibleScans[0].website_url}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">{new Date(visibleScans[0].created_at).toLocaleDateString()}</p>
               </CardContent>
             </Card>
             <Card className="shadow-elevated border-0 rounded-xl">
               <CardContent className="p-4 sm:p-5">
                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.15em]">Best Score</p>
-                <p className={`text-[24px] font-extrabold mt-1 ${getScoreColor(Math.max(...scans.map(s => s.authority_gap_score)))}`}>
-                  {Math.max(...scans.map(s => s.authority_gap_score))}<span className="text-[14px] text-muted-foreground/50">/100</span>
+                <p className={`text-[24px] font-extrabold mt-1 ${getScoreColor(Math.max(...visibleScans.map(s => s.authority_gap_score)))}`}>
+                  {Math.max(...visibleScans.map(s => s.authority_gap_score))}<span className="text-[14px] text-muted-foreground/50">/100</span>
                 </p>
                 <p className="text-[11px] text-muted-foreground/60 mt-1">Highest authority rating</p>
               </CardContent>
@@ -158,7 +195,7 @@ const DashboardPage = () => {
         )}
 
         {/* Authority Score Trend */}
-        {scans.length >= 2 && (
+        {visibleScans.length >= 2 && (
           <Card className="shadow-elevated border-0 rounded-xl">
             <CardContent className="p-5 sm:p-6">
               <div className="flex items-center gap-2.5 mb-5">
@@ -231,15 +268,41 @@ const DashboardPage = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="h-1.5 w-5 bg-ihd-dark-green rounded-full" />
-              <span className="text-[11px] uppercase tracking-[0.15em] font-extrabold text-foreground">Diagnostic Reports</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="h-1.5 w-5 bg-ihd-dark-green rounded-full" />
+                <span className="text-[11px] uppercase tracking-[0.15em] font-extrabold text-foreground">
+                  {showArchived ? "Archived Reports" : "Diagnostic Reports"}
+                </span>
+              </div>
+              {archivedCount > 0 && (
+                <button
+                  onClick={() => setShowArchived((v) => !v)}
+                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showArchived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
+                  {showArchived ? "Show active" : `Show archived (${archivedCount})`}
+                </button>
+              )}
             </div>
+
+            {visibleScans.length === 0 && (
+              <Card className="shadow-elevated border-0 rounded-xl">
+                <CardContent className="py-10 text-center">
+                  <Archive className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-[13px] text-muted-foreground/60">No archived reports.</p>
+                  <button onClick={() => setShowArchived(false)} className="text-[12px] text-primary mt-2 hover:underline">
+                    Back to active reports
+                  </button>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="space-y-3">
-              {scans.map((scan) => {
+              {visibleScans.map((scan) => {
                 const delta = deltaMap.get(scan.id);
                 return (
-                  <Card key={scan.id} className="shadow-elevated border-0 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card key={scan.id} className={`shadow-elevated border-0 rounded-xl overflow-hidden hover:shadow-lg transition-shadow ${scan.archived_at ? "opacity-60" : ""}`}>
                     <div className="flex items-stretch">
                       {/* Score column */}
                       <div className={`flex flex-col items-center justify-center px-5 sm:px-6 py-5 ${getScoreBg(scan.authority_gap_score)} border-r min-w-[80px]`}>
@@ -250,18 +313,11 @@ const DashboardPage = () => {
                         <span className={`text-[9px] font-extrabold uppercase tracking-[0.1em] mt-1.5 ${getScoreColor(scan.authority_gap_score)}`}>
                           {getScoreLabel(scan.authority_gap_score)}
                         </span>
-                        {/* Delta indicator */}
                         {delta !== null && delta !== undefined && (
                           <div className={`flex items-center gap-0.5 mt-2 text-[10px] font-bold ${
                             delta > 0 ? "text-success" : delta < 0 ? "text-destructive" : "text-muted-foreground/50"
                           }`}>
-                            {delta > 0 ? (
-                              <ArrowUpRight className="h-3 w-3" />
-                            ) : delta < 0 ? (
-                              <ArrowDownRight className="h-3 w-3" />
-                            ) : (
-                              <Minus className="h-3 w-3" />
-                            )}
+                            {delta > 0 ? <ArrowUpRight className="h-3 w-3" /> : delta < 0 ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
                             <span>{delta > 0 ? `+${delta}` : delta === 0 ? "0" : delta}</span>
                           </div>
                         )}
@@ -273,19 +329,25 @@ const DashboardPage = () => {
                           <div className="flex items-center gap-2">
                             <span className="text-[14px] font-bold text-foreground truncate">{scan.website_url}</span>
                             <ExternalLink className="h-3 w-3 text-muted-foreground/40 flex-shrink-0" />
+                            {scan.archived_at && (
+                              <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium shrink-0">Archived</span>
+                            )}
                           </div>
                           <div className="flex flex-wrap items-center gap-3 mt-2">
-                            <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
-                              <BarChart3 className="h-3 w-3" />{scan.clinic_type}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />{scan.location}
-                            </span>
+                            {scan.clinic_type && (
+                              <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
+                                <BarChart3 className="h-3 w-3" />{scan.clinic_type}
+                              </span>
+                            )}
+                            {scan.location && (
+                              <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />{scan.location}
+                              </span>
+                            )}
                             <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
                               <Calendar className="h-3 w-3" />{new Date(scan.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          {/* Mini score indicators */}
                           <div className="flex items-center gap-4 mt-2.5">
                             <div className="flex items-center gap-1.5">
                               <div className={`h-1.5 w-1.5 rounded-full ${scan.visibility_score >= 28 ? "bg-success" : scan.visibility_score >= 16 ? "bg-warning" : "bg-destructive"}`} />
@@ -298,11 +360,32 @@ const DashboardPage = () => {
                           </div>
                         </div>
 
-                        <Link to={`/results?scanId=${scan.id}`}>
-                          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground text-[12px] rounded-lg font-bold gap-1.5 h-9 px-4">
-                            View Report <ArrowRight className="h-3 w-3" />
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Link to={`/results?scanId=${scan.id}`}>
+                            <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground text-[12px] rounded-lg font-bold gap-1.5 h-9 px-4">
+                              View Report <ArrowRight className="h-3 w-3" />
+                            </Button>
+                          </Link>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => handleArchive(scan)} className="gap-2 cursor-pointer">
+                                {scan.archived_at
+                                  ? <><ArchiveRestore className="h-3.5 w-3.5" /> Restore</>
+                                  : <><Archive className="h-3.5 w-3.5" /> Archive</>
+                                }
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleDelete(scan)} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
+                                <Trash2 className="h-3.5 w-3.5" /> Delete permanently
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
                   </Card>
