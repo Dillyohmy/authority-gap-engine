@@ -116,9 +116,15 @@ export async function getProgress(projectId: string): Promise<ProjectProgress> {
   });
 }
 
+export interface MissingUploadItem {
+  category: string;
+  label: string;
+  auditArea: string;
+}
+
 export async function getMissing(
   projectId: string
-): Promise<{ missing: MissingItem[]; optional: MissingItem[] }> {
+): Promise<{ missing: MissingItem[]; optional: MissingItem[]; missingUploads: MissingUploadItem[]; optionalUploads: MissingUploadItem[] }> {
   const headers = await authHeaders();
   return apiFetch(`/api/projects/${projectId}/missing`, { headers });
 }

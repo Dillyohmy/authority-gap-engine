@@ -8,6 +8,11 @@ import {
   ALL_QUESTIONS,
   REQUIRED_QUESTION_IDS,
 } from "../config/intakeQuestions.js";
+import {
+  UPLOAD_CATEGORIES,
+  REQUIRED_UPLOAD_CATEGORIES,
+  type UploadCategory,
+} from "../config/uploadCategories.js";
 
 const SUPABASE_URL = requireEnv([
   "SUPABASE_URL",
@@ -303,6 +308,23 @@ projectRouter.get("/:id/progress", async (req, res, next) => {
       answered.has(id)
     ).length;
 
+    // Upload readiness
+    const { data: uploadRows } = await db
+      .from("uploaded_files")
+      .select("file_category, upload_status")
+      .eq("project_id", req.params.id)
+      .neq("upload_status", "deleted");
+
+    const uploadedCategories = new Set(
+      (uploadRows ?? [])
+        .filter((r) => r.upload_status === "uploaded")
+        .map((r) => r.file_category as UploadCategory)
+    );
+    const requiredUploadsTotal = REQUIRED_UPLOAD_CATEGORIES.length;
+    const requiredUploadsComplete = REQUIRED_UPLOAD_CATEGORIES.filter((c) =>
+      uploadedCategories.has(c)
+    ).length;
+
     res.json({
       sections,
       totalQuestions,
@@ -310,7 +332,15 @@ projectRouter.get("/:id/progress", async (req, res, next) => {
       totalRequired,
       requiredAnswered,
       overallPct: Math.round((totalAnswered / totalQuestions) * 100),
-      readyForAudit: requiredAnswered === totalRequired,
+      readyForAudit: requiredAnswered === totalRequired && requiredUploadsComplete === requiredUploadsTotal,
+      uploads: {
+        uploadedCategories: [...uploadedCategories],
+        requiredUploadsTotal,
+        requiredUploadsComplete,
+        uploadPct: requiredUploadsTotal > 0
+          ? Math.round((requiredUploadsComplete / requiredUploadsTotal) * 100)
+          : 100,
+      },
     });
   } catch (err) {
     next(err);
@@ -377,7 +407,36 @@ projectRouter.get("/:id/missing", async (req, res, next) => {
       };
     });
 
-    res.json({ missing, optional });
+    // Missing uploads
+    const { data: uploadRows } = await db
+      .from("uploaded_files")
+      .select("file_category, upload_status")
+      .eq("project_id", req.params.id)
+      .neq("upload_status", "deleted");
+
+    const uploadedCategories = new Set(
+      (uploadRows ?? [])
+        .filter((r) => r.upload_status === "uploaded")
+        .map((r) => r.file_category as UploadCategory)
+    );
+
+    const missingUploads = REQUIRED_UPLOAD_CATEGORIES.filter(
+      (c) => !uploadedCategories.has(c)
+    ).map((c) => ({
+      category: c,
+      label: UPLOAD_CATEGORIES[c].label,
+      auditArea: UPLOAD_CATEGORIES[c].auditArea,
+    }));
+
+    const optionalUploads = Object.values(UPLOAD_CATEGORIES)
+      .filter((cat) => !cat.required && !uploadedCategories.has(cat.id))
+      .map((cat) => ({
+        category: cat.id,
+        label: cat.label,
+        auditArea: cat.auditArea,
+      }));
+
+    res.json({ missing, optional, missingUploads, optionalUploads });
   } catch (err) {
     next(err);
   }

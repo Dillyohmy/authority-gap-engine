@@ -18,6 +18,7 @@ import ProjectsPage from "./pages/ProjectsPage.tsx";
 import NewProjectPage from "./pages/NewProjectPage.tsx";
 import IntakePage from "./pages/IntakePage.tsx";
 import IntakeReviewPage from "./pages/IntakeReviewPage.tsx";
+import UploadCenterPage from "./pages/UploadCenterPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/projects/new" element={<NewProjectPage />} />
             <Route path="/projects/:projectId/intake" element={<IntakePage />} />
             <Route path="/projects/:projectId/review" element={<IntakeReviewPage />} />
+            <Route path="/projects/:projectId/uploads" element={<UploadCenterPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

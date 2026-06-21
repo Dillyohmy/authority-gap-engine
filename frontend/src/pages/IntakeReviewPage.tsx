@@ -10,6 +10,7 @@ import {
   type Project,
   type SectionProgress,
   type MissingItem,
+  type MissingUploadItem,
 } from "@/lib/projectsApi";
 import { INTAKE_SECTIONS } from "@/config/intakeQuestions";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ const IntakeReviewPage = () => {
   const [readyForAudit, setReadyForAudit] = useState(false);
   const [missing, setMissing] = useState<MissingItem[]>([]);
   const [optional, setOptional] = useState<MissingItem[]>([]);
+  const [missingUploads, setMissingUploads] = useState<MissingUploadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -57,6 +59,7 @@ const IntakeReviewPage = () => {
       setReadyForAudit(prog.readyForAudit);
       setMissing(miss.missing);
       setOptional(miss.optional);
+      setMissingUploads(miss.missingUploads ?? []);
       setLoading(false);
     }).catch(() => navigate("/projects"));
   }, [user, projectId, navigate]);
@@ -237,6 +240,45 @@ const IntakeReviewPage = () => {
                       </p>
                     </div>
                     <Edit2 className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-primary flex-shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Missing uploads */}
+        {missingUploads.length > 0 && (
+          <Card className="shadow-elevated border-0 rounded-xl">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <h3 className="text-[13px] font-bold text-foreground">
+                    Required Files Missing ({missingUploads.length})
+                  </h3>
+                </div>
+                <Link
+                  to={`/projects/${projectId}/uploads`}
+                  className="text-[11px] text-primary hover:underline font-medium"
+                >
+                  Open Upload Center →
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {missingUploads.map((item) => (
+                  <Link
+                    key={item.category}
+                    to={`/projects/${projectId}/uploads`}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 hover:bg-amber-100 transition-colors group"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-amber-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-medium text-foreground truncate">
+                        {item.label}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground/60">{item.auditArea}</p>
+                    </div>
                   </Link>
                 ))}
               </div>

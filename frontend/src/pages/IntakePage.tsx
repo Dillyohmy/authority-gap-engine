@@ -419,6 +419,11 @@ const IntakePage = () => {
                   {saving ? "Saving…" : "Save now"}
                 </Button>
               )}
+              <Link to={`/projects/${projectId}/uploads`}>
+                <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10 gap-1.5 text-[11px] h-8">
+                  Upload Files
+                </Button>
+              </Link>
               {readyForAudit && (
                 <Link to={`/projects/${projectId}/review`}>
                   <Button size="sm" className="gap-1.5 text-[11px] h-8 bg-white text-ihd-dark-green hover:bg-white/90">

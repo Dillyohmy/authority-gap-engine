@@ -8,7 +8,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "worker": "tsx src/workers/scanWorker.ts",
-    "worker:dev": "tsx watch src/workers/scanWorker.ts"
+    "worker:dev": "tsx watch src/workers/scanWorker.ts",
+    "worker:parse": "tsx src/workers/parseWorker.ts",
+    "worker:parse:dev": "tsx watch src/workers/parseWorker.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
@@ -16,6 +18,7 @@
     "bullmq": "^5.25.0",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
+    "csv-parse": "^7.0.0",
     "dotenv": "^16.4.0",
     "express": "^4.21.0",
     "helmet": "^8.0.0",
