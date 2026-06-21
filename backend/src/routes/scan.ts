@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Queue } from "bullmq";
 import { redis, REDIS_ENABLED } from "../lib/redis.js";
 import { logger } from "../lib/logger.js";
+import { db } from "../lib/db.js";
 import type {
   ScanFinding,
   ScanJob,
@@ -55,29 +56,31 @@ scanRouter.post("/start", async (req, res, next) => {
 
     jobs.set(jobId, job);
 
+    // Always persist to Supabase for durability across restarts
+    db.from("scans").insert({
+      job_id: jobId,
+      website_url: input.website_url,
+      clinic_type: input.clinic_type,
+      location: input.location,
+      status: "queued",
+    }).then(({ error }) => {
+      if (error) logger.warn({ jobId, error: error.message }, "Could not persist scan to Supabase");
+    });
+
     if (!REDIS_ENABLED) {
       const report = createLocalDevReport(jobId, input);
-
-      const completedJob: ScanJob = {
-        ...job,
-        status: "completed",
-        result: report,
-        updated_at: new Date(),
-      };
-
+      const completedJob: ScanJob = { ...job, status: "completed", result: report, updated_at: new Date() };
       jobs.set(jobId, completedJob);
       results.set(jobId, report);
-
-      logger.info(
-        { jobId },
-        "Redis disabled; using in-memory local scan result"
-      );
-
+      // Update Supabase record so it's durable even without Redis
+      db.from("scans").update({ status: "completed", report_json: report }).eq("job_id", jobId).then(() => {});
+      logger.info({ jobId }, "Redis disabled; using in-memory local scan result");
       return res.json({ job_id: jobId });
     }
 
     try {
-      await redis.set(`scan:job:${jobId}`, JSON.stringify(job), "EX", 3600);
+      // Extend job TTL to 24h to match result TTL and survive longer cold starts
+      await redis.set(`scan:job:${jobId}`, JSON.stringify(job), "EX", 86400);
 
       await getScanQueue().add(
         "process-scan",
@@ -92,32 +95,18 @@ scanRouter.post("/start", async (req, res, next) => {
       logger.info({ jobId, url: input.website_url }, "Scan job created");
     } catch (err) {
       const report = createLocalDevReport(jobId, input);
-
-      const completedJob: ScanJob = {
-        ...job,
-        status: "completed",
-        result: report,
-        updated_at: new Date(),
-      };
-
+      const completedJob: ScanJob = { ...job, status: "completed", result: report, updated_at: new Date() };
       jobs.set(jobId, completedJob);
       results.set(jobId, report);
-
-      logger.warn(
-        { err, jobId },
-        "Redis unavailable; using in-memory local scan result"
-      );
+      db.from("scans").update({ status: "completed", report_json: report }).eq("job_id", jobId).then(() => {});
+      logger.warn({ err, jobId }, "Redis unavailable; using in-memory local scan result");
     }
 
     return res.json({ job_id: jobId });
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return res.status(400).json({
-        error: "Invalid input",
-        details: err.errors,
-      });
+      return res.status(400).json({ error: "Invalid input", details: err.errors });
     }
-
     return next(err);
   }
 });
@@ -129,40 +118,36 @@ scanRouter.post("/start", async (req, res, next) => {
 scanRouter.get("/status/:jobId", async (req, res) => {
   const { jobId } = req.params;
 
+  // 1. Try Redis
   if (REDIS_ENABLED) {
     try {
       const raw = await redis.get(`scan:job:${jobId}`);
-
       if (raw) {
         const job: ScanJob = JSON.parse(raw);
-
-        return res.json({
-          job_id: job.id,
-          status: job.status,
-          ...(job.error ? { error: job.error } : {}),
-        });
+        return res.json({ job_id: job.id, status: job.status, ...(job.error ? { error: job.error } : {}) });
       }
     } catch (err) {
-      logger.warn(
-        { err, jobId },
-        "Redis unavailable while checking scan status"
-      );
+      logger.warn({ err, jobId }, "Redis unavailable while checking scan status");
     }
   }
 
+  // 2. Try in-memory (same process, survives within a session)
   const localJob = jobs.get(jobId);
-
   if (localJob) {
-    return res.json({
-      job_id: localJob.id,
-      status: localJob.status,
-      ...(localJob.error ? { error: localJob.error } : {}),
-    });
+    return res.json({ job_id: localJob.id, status: localJob.status, ...(localJob.error ? { error: localJob.error } : {}) });
   }
 
-  return res.status(404).json({
-    error: "Job not found",
-  });
+  // 3. Fall back to Supabase (survives restarts and Redis outages)
+  try {
+    const { data } = await db.from("scans").select("job_id, status, error_message").eq("job_id", jobId).single();
+    if (data) {
+      return res.json({ job_id: data.job_id, status: data.status, ...(data.error_message ? { error: data.error_message } : {}) });
+    }
+  } catch (err) {
+    logger.warn({ err, jobId }, "Supabase unavailable while checking scan status");
+  }
+
+  return res.status(404).json({ error: "Job not found" });
 });
 
 /**
@@ -172,31 +157,38 @@ scanRouter.get("/status/:jobId", async (req, res) => {
 scanRouter.get("/result/:jobId", async (req, res) => {
   const { jobId } = req.params;
 
+  // 1. Try Redis
   if (REDIS_ENABLED) {
     try {
       const raw = await redis.get(`scan:result:${jobId}`);
-
       if (raw) {
-        const report: ScanReport = JSON.parse(raw);
-        return res.json(report);
+        return res.json(JSON.parse(raw) as ScanReport);
       }
     } catch (err) {
-      logger.warn(
-        { err, jobId },
-        "Redis unavailable while fetching scan result"
-      );
+      logger.warn({ err, jobId }, "Redis unavailable while fetching scan result");
     }
   }
 
+  // 2. Try in-memory
   const localResult = results.get(jobId) || jobs.get(jobId)?.result;
-
   if (localResult) {
     return res.json(localResult);
   }
 
-  return res.status(404).json({
-    error: "Result not found or scan not complete",
-  });
+  // 3. Fall back to Supabase
+  try {
+    const { data } = await db.from("scans").select("report_json, status").eq("job_id", jobId).single();
+    if (data?.report_json) {
+      return res.json(data.report_json as ScanReport);
+    }
+    if (data?.status && data.status !== "completed") {
+      return res.status(400).json({ error: `Scan not complete (status: ${data.status})` });
+    }
+  } catch (err) {
+    logger.warn({ err, jobId }, "Supabase unavailable while fetching scan result");
+  }
+
+  return res.status(404).json({ error: "Result not found or scan not complete" });
 });
 
 function createLocalDevReport(

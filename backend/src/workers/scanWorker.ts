@@ -14,6 +14,7 @@ import "../lib/env.js";
 import { Worker, type Job } from "bullmq";
 import { redis } from "../lib/redis.js";
 import { logger } from "../lib/logger.js";
+import { db } from "../lib/db.js";
 import { crawlWebsite } from "../services/crawlService.js";
 import { extractSignals } from "../services/extractService.js";
 import { evaluateRules } from "../services/ruleEngine.js";
@@ -28,13 +29,28 @@ async function updateJobStatus(
   status: ScanJobStatus,
   error?: string
 ) {
-  const raw = await redis.get(`scan:job:${jobId}`);
-  if (!raw) return;
-  const job: ScanJob = JSON.parse(raw);
-  job.status = status;
-  job.updated_at = new Date();
-  if (error) job.error = error;
-  await redis.set(`scan:job:${jobId}`, JSON.stringify(job), "EX", 3600);
+  // Update Redis (rebuild key if missing so cold-start workers still track status)
+  try {
+    const raw = await redis.get(`scan:job:${jobId}`);
+    const job: ScanJob = raw
+      ? JSON.parse(raw)
+      : { id: jobId, status: "queued", created_at: new Date(), updated_at: new Date(), input: {} as StartScanInput };
+    job.status = status;
+    job.updated_at = new Date();
+    if (error) job.error = error;
+    await redis.set(`scan:job:${jobId}`, JSON.stringify(job), "EX", 86400);
+  } catch (err) {
+    logger.warn({ jobId, err }, "Could not update Redis job status");
+  }
+
+  // Always mirror status to Supabase
+  db.from("scans")
+    .update({ status, error_message: error ?? null, updated_at: new Date().toISOString() })
+    .eq("job_id", jobId)
+    .then(({ error: dbErr }) => {
+      if (dbErr) logger.warn({ jobId, error: dbErr.message }, "Could not update scan status in Supabase");
+    });
+
   logger.info({ jobId, status }, "Job status updated");
 }
 
@@ -91,8 +107,29 @@ async function processScan(job: Job<{ jobId: string; input: StartScanInput }>) {
       opportunity
     );
 
-    // Store result
-    await redis.set(`scan:result:${jobId}`, JSON.stringify(report), "EX", 86400);
+    // Store result in Redis
+    try {
+      await redis.set(`scan:result:${jobId}`, JSON.stringify(report), "EX", 86400);
+    } catch (err) {
+      logger.warn({ jobId, err }, "Could not store result in Redis");
+    }
+
+    // Store result in Supabase (durable fallback)
+    db.from("scans").update({
+      status: "completed",
+      authority_gap_score: scores.authority_gap_score,
+      visibility_score: scores.visibility_score,
+      conversion_score: scores.conversion_score,
+      opportunity_score: scores.opportunity_score,
+      estimated_revenue_low: report.estimated_revenue_low,
+      estimated_revenue_high: report.estimated_revenue_high,
+      executive_summary: report.executive_summary,
+      report_json: report,
+      updated_at: new Date().toISOString(),
+    }).eq("job_id", jobId).then(({ error }) => {
+      if (error) logger.warn({ jobId, error: error.message }, "Could not store result in Supabase");
+      else logger.info({ jobId }, "Scan result saved to Supabase");
+    });
 
     // Step 6: Complete
     await updateJobStatus(jobId, "completed");
