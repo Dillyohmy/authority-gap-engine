@@ -39,6 +39,7 @@ const IntakeReviewPage = () => {
   const [missing, setMissing] = useState<MissingItem[]>([]);
   const [optional, setOptional] = useState<MissingItem[]>([]);
   const [missingUploads, setMissingUploads] = useState<MissingUploadItem[]>([]);
+  const [missingCompetitorItems, setMissingCompetitorItems] = useState<{ label: string; description: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -60,6 +61,7 @@ const IntakeReviewPage = () => {
       setMissing(miss.missing);
       setOptional(miss.optional);
       setMissingUploads(miss.missingUploads ?? []);
+      setMissingCompetitorItems((miss as Record<string, unknown>).missingCompetitorItems as { label: string; description: string }[] ?? []);
       setLoading(false);
     }).catch(() => navigate("/projects"));
   }, [user, projectId, navigate]);
@@ -278,6 +280,43 @@ const IntakeReviewPage = () => {
                         {item.label}
                       </p>
                       <p className="text-[11px] text-muted-foreground/60">{item.auditArea}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Missing competitor items */}
+        {missingCompetitorItems.length > 0 && (
+          <Card className="shadow-elevated border-0 rounded-xl">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-blue-500" />
+                  <h3 className="text-[13px] font-bold text-foreground">
+                    Competitor Data Missing ({missingCompetitorItems.length})
+                  </h3>
+                </div>
+                <Link
+                  to={`/projects/${projectId}/competitors`}
+                  className="text-[11px] text-primary hover:underline font-medium"
+                >
+                  Open Competitors →
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {missingCompetitorItems.map((item, i) => (
+                  <Link
+                    key={i}
+                    to={`/projects/${projectId}/competitors`}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors group"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-blue-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-medium text-foreground">{item.label}</p>
+                      <p className="text-[11px] text-muted-foreground/60">{item.description}</p>
                     </div>
                   </Link>
                 ))}

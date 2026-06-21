@@ -325,6 +325,19 @@ projectRouter.get("/:id/progress", async (req, res, next) => {
       uploadedCategories.has(c)
     ).length;
 
+    // Competitor readiness
+    const { data: competitorRows } = await db
+      .from("competitors")
+      .select("id, crawl_status, gbp_url, search_phrase, city_searched_from")
+      .eq("project_id", req.params.id);
+
+    const competitors = competitorRows ?? [];
+    const competitorCount = competitors.length;
+    const crawledCount = competitors.filter(c => c.crawl_status === "completed").length;
+    const gbpUrlCount = competitors.filter(c => c.gbp_url).length;
+    const hasSearchPhrase = competitors.some(c => c.search_phrase);
+    const hasCitySearched = competitors.some(c => c.city_searched_from);
+
     res.json({
       sections,
       totalQuestions,
@@ -340,6 +353,17 @@ projectRouter.get("/:id/progress", async (req, res, next) => {
         uploadPct: requiredUploadsTotal > 0
           ? Math.round((requiredUploadsComplete / requiredUploadsTotal) * 100)
           : 100,
+      },
+      competitors: {
+        competitorCount,
+        crawledCount,
+        gbpUrlCount,
+        hasSearchPhrase,
+        hasCitySearched,
+        hasAtLeastOne: competitorCount >= 1,
+        hasThree: competitorCount >= 3,
+        hasCrawledAtLeastOne: crawledCount >= 1,
+        hasCrawledAll: crawledCount === competitorCount && competitorCount > 0,
       },
     });
   } catch (err) {
@@ -436,7 +460,36 @@ projectRouter.get("/:id/missing", async (req, res, next) => {
         auditArea: cat.auditArea,
       }));
 
-    res.json({ missing, optional, missingUploads, optionalUploads });
+    // Missing competitor inputs
+    const { data: competitorRows } = await db
+      .from("competitors")
+      .select("id, crawl_status, gbp_url, search_phrase, city_searched_from")
+      .eq("project_id", req.params.id);
+
+    const competitors = competitorRows ?? [];
+    const missingCompetitorItems: { label: string; description: string }[] = [];
+
+    if (competitors.length === 0) {
+      missingCompetitorItems.push({ label: "No competitors added", description: "Add at least 1 competitor from your map pack or organic results" });
+    } else {
+      if (competitors.length < 3) {
+        missingCompetitorItems.push({ label: "Add more competitors", description: `Only ${competitors.length}/3 competitors added` });
+      }
+      if (!competitors.some(c => c.crawl_status === "completed")) {
+        missingCompetitorItems.push({ label: "Crawl at least 1 competitor site", description: "Start a website crawl from the Competitors page" });
+      }
+      if (!competitors.some(c => c.gbp_url)) {
+        missingCompetitorItems.push({ label: "Add competitor GBP URLs", description: "Paste Google Business Profile URLs for competitors" });
+      }
+      if (!competitors.some(c => c.search_phrase)) {
+        missingCompetitorItems.push({ label: "Enter search phrase used", description: "What search did you use to find these competitors?" });
+      }
+      if (!competitors.some(c => c.city_searched_from)) {
+        missingCompetitorItems.push({ label: "Enter city searched from", description: "Which city location was used when searching?" });
+      }
+    }
+
+    res.json({ missing, optional, missingUploads, optionalUploads, missingCompetitorItems });
   } catch (err) {
     next(err);
   }

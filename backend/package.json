@@ -10,7 +10,11 @@
     "worker": "tsx src/workers/scanWorker.ts",
     "worker:dev": "tsx watch src/workers/scanWorker.ts",
     "worker:parse": "tsx src/workers/parseWorker.ts",
-    "worker:parse:dev": "tsx watch src/workers/parseWorker.ts"
+    "worker:parse:dev": "tsx watch src/workers/parseWorker.ts",
+    "worker:competitor-crawl": "tsx src/workers/competitorCrawlWorker.ts",
+    "worker:competitor-crawl:dev": "tsx watch src/workers/competitorCrawlWorker.ts",
+    "worker:competitor-analysis": "tsx src/workers/competitorAnalysisWorker.ts",
+    "worker:competitor-analysis:dev": "tsx watch src/workers/competitorAnalysisWorker.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",

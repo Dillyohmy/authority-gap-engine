@@ -6,6 +6,7 @@ import { leadRouter } from "./routes/lead.js";
 import { eventRouter } from "./routes/event.js";
 import { projectRouter } from "./routes/projects.js";
 import { uploadsRouter } from "./routes/uploads.js";
+import { competitorsRouter, competitiveAnalysisRouter } from "./routes/competitors.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -27,6 +28,8 @@ app.use("/api/lead", leadRouter);
 app.use("/api/event", eventRouter);
 app.use("/api/projects", projectRouter);
 app.use("/api/projects/:projectId/uploads", uploadsRouter);
+app.use("/api/projects/:projectId/competitors", competitorsRouter);
+app.use("/api/projects/:projectId/competitive-analysis", competitiveAnalysisRouter);
 
 // Global error handler
 app.use(errorHandler);
