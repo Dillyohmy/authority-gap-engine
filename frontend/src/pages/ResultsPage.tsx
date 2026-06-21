@@ -50,7 +50,7 @@ const ResultsPage = () => {
         try {
           const { data, error } = await supabase
             .from("scans")
-            .select("report_json, job_id")
+            .select("report_json, job_id, website_url")
             .eq("id", scanId)
             .single();
 
@@ -64,19 +64,35 @@ const ResultsPage = () => {
 
           if (data.report_json) {
             setReport(data.report_json as ScanReport);
-            setUnlocked(true); // already saved — show full report
+            setUnlocked(true);
             setLoading(false);
             return;
           }
 
-          // report_json not stored yet — fall back to fetching by job_id
+          // report_json not stored — try fetching live result by job_id
           if (data.job_id) {
-            const result = await getScanResult(data.job_id);
-            if (!cancelled) { setReport(result); setUnlocked(true); setLoading(false); }
-            return;
+            try {
+              const result = await getScanResult(data.job_id);
+              if (!cancelled) {
+                setReport(result);
+                setUnlocked(true);
+                setLoading(false);
+                // Back-fill report_json so future revisits work instantly
+                supabase.from("scans").update({ report_json: result }).eq("id", scanId).then(() => {});
+              }
+              return;
+            } catch {
+              // job expired from Redis — fall through to rescan prompt
+            }
           }
 
-          setFetchError("Report data not available for this scan.");
+          // Older scan with no stored report — prompt re-scan with URL pre-filled
+          const websiteUrl = data.website_url;
+          setFetchError(
+            websiteUrl
+              ? `__RESCAN__${websiteUrl}`
+              : "Report data not available. Please run a new scan."
+          );
           setLoading(false);
         } catch (err) {
           if (!cancelled) {
@@ -123,6 +139,7 @@ const ResultsPage = () => {
       opportunity_score: report.scores.opportunity_score,
       estimated_revenue_low: report.estimated_revenue_low,
       estimated_revenue_high: report.estimated_revenue_high,
+      report_json: report,
       findings_json: {
         visibility: report.visibility.findings,
         conversion: report.conversion.findings,
@@ -256,10 +273,19 @@ const ResultsPage = () => {
 
   // ── ERROR STATE ──
   if (fetchError || !report) {
+    const rescanUrl = fetchError?.startsWith("__RESCAN__") ? fetchError.replace("__RESCAN__", "") : null;
     return (
       <ScanError
-        message={fetchError || "Report data is missing or incomplete."}
-        onRetry={() => navigate("/scan")}
+        message={
+          rescanUrl
+            ? `This report was saved before full report storage was enabled. Re-run the scan to generate a fresh report.`
+            : (fetchError || "Report data is missing or incomplete.")
+        }
+        onRetry={() => rescanUrl
+          ? navigate(`/scan?url=${encodeURIComponent(rescanUrl)}`)
+          : navigate("/scan")
+        }
+        retryLabel={rescanUrl ? "Re-run Scan" : undefined}
       />
     );
   }

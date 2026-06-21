@@ -7,12 +7,14 @@ interface ScanErrorProps {
   title?: string;
   message?: string;
   onRetry?: () => void;
+  retryLabel?: string;
 }
 
 const ScanError = ({
   title = "Scan Could Not Be Completed",
   message = "Something went wrong while analyzing this website. This may be due to the site being unreachable, a timeout, or an unexpected error.",
   onRetry,
+  retryLabel = "Retry Scan",
 }: ScanErrorProps) => (
   <div className="min-h-[calc(100vh-56px)] flex items-center justify-center bg-secondary px-4">
     <Card className="shadow-elevated border-0 rounded-xl max-w-lg w-full overflow-hidden">
@@ -42,7 +44,7 @@ const ScanError = ({
           {onRetry && (
             <Button onClick={onRetry} className="gap-2 rounded-lg font-bold text-[13px] px-6 h-11">
               <RotateCcw className="h-4 w-4" />
-              Retry Scan
+              {retryLabel}
             </Button>
           )}
           <Link to="/scan">
