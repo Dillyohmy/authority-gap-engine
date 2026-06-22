@@ -163,35 +163,18 @@ const ProjectsPage = () => {
                       </div>
 
                       <div className="flex gap-2">
+                        <Link to={`/projects/${project.id}`}>
+                          <Button
+                            size="sm"
+                            className="text-[12px] rounded-lg font-bold gap-1.5 h-9 px-4"
+                          >
+                            Open Dashboard <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        </Link>
                         {project.status === "intake" && (
                           <Link to={`/projects/${project.id}/intake`}>
-                            <Button
-                              size="sm"
-                              className="text-[12px] rounded-lg font-bold gap-1.5 h-9 px-4"
-                            >
-                              Resume Intake <ArrowRight className="h-3 w-3" />
-                            </Button>
-                          </Link>
-                        )}
-                        {project.status === "ready" && (
-                          <Link to={`/projects/${project.id}/review`}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-success text-success hover:bg-success hover:text-white text-[12px] rounded-lg font-bold gap-1.5 h-9 px-4"
-                            >
-                              View Review <ArrowRight className="h-3 w-3" />
-                            </Button>
-                          </Link>
-                        )}
-                        {(project.status === "auditing" || project.status === "complete") && (
-                          <Link to={`/projects/${project.id}/intake`}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-[12px] rounded-lg font-bold gap-1.5 h-9 px-4"
-                            >
-                              View Intake <ArrowRight className="h-3 w-3" />
+                            <Button size="sm" variant="outline" className="text-[12px] rounded-lg h-9 px-3">
+                              Intake
                             </Button>
                           </Link>
                         )}

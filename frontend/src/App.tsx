@@ -23,6 +23,7 @@ import CompetitorsPage from "./pages/CompetitorsPage.tsx";
 import CompetitiveAnalysisPage from "./pages/CompetitiveAnalysisPage.tsx";
 import FullReportPage from "./pages/FullReportPage.tsx";
 import GrowthPlanPage from "./pages/GrowthPlanPage.tsx";
+import ProjectDashboardPage from "./pages/ProjectDashboardPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/strategy-call" element={<StrategyCallPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/new" element={<NewProjectPage />} />
+            <Route path="/projects/:projectId" element={<ProjectDashboardPage />} />
             <Route path="/projects/:projectId/intake" element={<IntakePage />} />
             <Route path="/projects/:projectId/review" element={<IntakeReviewPage />} />
             <Route path="/projects/:projectId/uploads" element={<UploadCenterPage />} />

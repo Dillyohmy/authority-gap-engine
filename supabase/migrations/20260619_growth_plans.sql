@@ -5,7 +5,7 @@ create table if not exists growth_plans (
   id                    uuid primary key default gen_random_uuid(),
   project_id            uuid references projects(id) on delete cascade not null,
   user_id               uuid references auth.users(id) on delete cascade not null,
-  source_report_id      uuid references reports(id) on delete set null,
+  source_report_id      uuid,
   plan_type             text not null default 'personal_authority_growth_plan',
   plan_version          text not null default '1.0',
   plan_status           text not null default 'queued',
