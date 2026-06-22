@@ -8,6 +8,7 @@ import { projectRouter } from "./routes/projects.js";
 import { uploadsRouter } from "./routes/uploads.js";
 import { competitorsRouter, competitiveAnalysisRouter } from "./routes/competitors.js";
 import { reportsRouter } from "./routes/reports.js";
+import { growthPlansRouter } from "./routes/growthPlans.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -32,6 +33,7 @@ app.use("/api/projects/:projectId/uploads", uploadsRouter);
 app.use("/api/projects/:projectId/competitors", competitorsRouter);
 app.use("/api/projects/:projectId/competitive-analysis", competitiveAnalysisRouter);
 app.use("/api/projects/:projectId/reports", reportsRouter);
+app.use("/api/projects/:projectId/growth-plans", growthPlansRouter);
 
 // Global error handler
 app.use(errorHandler);

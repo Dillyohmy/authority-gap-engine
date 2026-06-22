@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft, RefreshCw, Loader2, Download, AlertTriangle,
   CheckCircle2, ChevronDown, ChevronUp, Shield, MapPin,
-  Zap, Heart, BarChart3, FileText, Info, AlertCircle
+  Zap, Heart, BarChart3, FileText, Info, AlertCircle, TrendingUp
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { reportsApi, type FullReportJson, type PhaseAnalysis, type PriorityAction, type MissingDataItem } from "@/lib/reportsApi";
+import { growthPlansApi } from "@/lib/growthPlansApi";
 
 const POLL_MS = 4000;
 
@@ -200,12 +201,14 @@ export default function FullReportPage() {
   const { projectId, reportId } = useParams<{ projectId: string; reportId: string }>();
   const { toast } = useToast();
 
+  const navigate = useNavigate();
   const [reportStatus, setReportStatus] = useState<string>("queued");
   const [report, setReport] = useState<FullReportJson | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [showMissing, setShowMissing] = useState(false);
+  const [generatingPlan, setGeneratingPlan] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadReport = useCallback(async () => {
@@ -233,6 +236,18 @@ export default function FullReportPage() {
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [reportStatus, loadReport]);
+
+  const handleGeneratePlan = async () => {
+    if (!projectId || !reportId) return;
+    setGeneratingPlan(true);
+    try {
+      const result = await growthPlansApi.start(projectId, reportId);
+      navigate(`/projects/${projectId}/growth-plans/${result.plan_id}`);
+    } catch (e) {
+      toast({ title: "Could not start growth plan", description: (e as Error).message, variant: "destructive" });
+      setGeneratingPlan(false);
+    }
+  };
 
   const handleExport = async () => {
     if (!report) return;
@@ -332,10 +347,21 @@ export default function FullReportPage() {
               </p>
             </div>
           </div>
-          <Button size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5 font-bold text-[12px] shrink-0 h-9">
-            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-            Export PDF
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={handleGeneratePlan}
+              disabled={generatingPlan || reportStatus !== "completed"}
+              className="gap-1.5 font-bold text-[12px] shrink-0 h-9 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {generatingPlan ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <TrendingUp className="h-3.5 w-3.5" />}
+              Growth Plan
+            </Button>
+            <Button size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5 font-bold text-[12px] shrink-0 h-9">
+              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              Export PDF
+            </Button>
+          </div>
         </div>
 
         {/* Authority Score + Confidence */}

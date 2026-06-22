@@ -22,6 +22,7 @@ import UploadCenterPage from "./pages/UploadCenterPage.tsx";
 import CompetitorsPage from "./pages/CompetitorsPage.tsx";
 import CompetitiveAnalysisPage from "./pages/CompetitiveAnalysisPage.tsx";
 import FullReportPage from "./pages/FullReportPage.tsx";
+import GrowthPlanPage from "./pages/GrowthPlanPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/projects/:projectId/competitors" element={<CompetitorsPage />} />
             <Route path="/projects/:projectId/competitive-analysis" element={<CompetitiveAnalysisPage />} />
             <Route path="/projects/:projectId/reports/:reportId" element={<FullReportPage />} />
+            <Route path="/projects/:projectId/growth-plans/:planId" element={<GrowthPlanPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
