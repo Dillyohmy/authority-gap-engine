@@ -10,6 +10,7 @@ import { competitorsRouter, competitiveAnalysisRouter } from "./routes/competito
 import { reportsRouter } from "./routes/reports.js";
 import { growthPlansRouter } from "./routes/growthPlans.js";
 import { dashboardRouter } from "./routes/dashboard.js";
+import { integrationsRouter, globalIntegrationsRouter } from "./routes/integrations.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -36,6 +37,8 @@ app.use("/api/projects/:projectId/competitive-analysis", competitiveAnalysisRout
 app.use("/api/projects/:projectId/reports", reportsRouter);
 app.use("/api/projects/:projectId/growth-plans", growthPlansRouter);
 app.use("/api/projects/:projectId/dashboard", dashboardRouter);
+app.use("/api/projects/:projectId/integrations", integrationsRouter);
+app.use("/api/integrations", globalIntegrationsRouter);
 
 // Global error handler
 app.use(errorHandler);

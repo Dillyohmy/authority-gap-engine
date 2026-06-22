@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Building2, Globe, MapPin, ClipboardList, Upload, Users, FileText, TrendingUp,
-  Activity, ChevronRight, RefreshCw, AlertCircle,
+  Activity, ChevronRight, RefreshCw, AlertCircle, Link2,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -224,6 +224,12 @@ export default function ProjectDashboardPage() {
                   label="Intake"
                   href={`/projects/${projectId}/intake`}
                   description={`${data.intake_progress.pct}% complete`}
+                />
+                <QuickNavCard
+                  icon={<Link2 className="h-4 w-4" />}
+                  label="Connected Sources"
+                  href={`/projects/${projectId}/integrations`}
+                  description="Google Search Console &amp; GA4"
                 />
                 <QuickNavCard
                   icon={<Upload className="h-4 w-4" />}

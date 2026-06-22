@@ -8,3 +8,4 @@ import "./competitorCrawlWorker.js";
 import "./competitorAnalysisWorker.js";
 import "./fullReportWorker.js";
 import "./growthPlanWorker.js";
+import "./integrationWorker.js";

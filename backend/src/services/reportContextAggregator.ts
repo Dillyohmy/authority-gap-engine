@@ -7,6 +7,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ReportContext } from "../types/fullReport.js";
 import { logger } from "../lib/logger.js";
+import { loadGscSummary } from "./searchConsoleService.js";
+import { loadGa4Summary } from "./googleAnalyticsService.js";
 
 export async function aggregateReportContext(
   db: SupabaseClient,
@@ -111,7 +113,24 @@ export async function aggregateReportContext(
     }
   }
 
-  // 6. Competitive gap analysis
+  // 6. Connected Google integration data (prefer over CSV when available)
+  const gscApiSummary = await loadGscSummary(db, projectId).catch(() => null);
+  const ga4ApiSummary = await loadGa4Summary(db, projectId).catch(() => null);
+
+  // Merge API data into parsedSummaries if newer/available
+  if (gscApiSummary) {
+    parsedSummaries["gsc_api_summary"] = gscApiSummary;
+    // Also populate standard keys so existing report logic picks them up
+    if (!parsedSummaries["gsc_queries"]) parsedSummaries["gsc_queries"] = gscApiSummary;
+    if (!parsedSummaries["gsc_pages"]) parsedSummaries["gsc_pages"] = gscApiSummary;
+  }
+  if (ga4ApiSummary) {
+    parsedSummaries["ga_api_summary"] = ga4ApiSummary;
+    if (!parsedSummaries["ga_traffic"]) parsedSummaries["ga_traffic"] = ga4ApiSummary;
+    if (!parsedSummaries["ga_landing_pages"]) parsedSummaries["ga_landing_pages"] = ga4ApiSummary;
+  }
+
+  // 7 (was 6). Competitive gap analysis
   const { data: gapRow } = await db
     .from("competitive_gap_analysis")
     .select("analysis_json, status")
@@ -176,11 +195,13 @@ export function assessDataCompleteness(ctx: ReportContext): {
   else if (intakeCount >= 4) available.push("Intake answers (partial)");
   else missing.push("Guided intake answers");
 
-  if (ctx.parsedSummaries["gsc_queries"] || ctx.parsedSummaries["gsc_pages"]) available.push("Google Search Console data");
-  else missing.push("Google Search Console CSV");
+  if (ctx.parsedSummaries["gsc_api_summary"]) available.push("Google Search Console (live API)");
+  else if (ctx.parsedSummaries["gsc_queries"] || ctx.parsedSummaries["gsc_pages"]) available.push("Google Search Console (CSV)");
+  else missing.push("Google Search Console data");
 
-  if (ctx.parsedSummaries["ga_traffic"] || ctx.parsedSummaries["ga_landing_pages"]) available.push("Google Analytics data");
-  else missing.push("Google Analytics CSV");
+  if (ctx.parsedSummaries["ga_api_summary"]) available.push("Google Analytics (live API)");
+  else if (ctx.parsedSummaries["ga_traffic"] || ctx.parsedSummaries["ga_landing_pages"]) available.push("Google Analytics (CSV)");
+  else missing.push("Google Analytics data");
 
   if (ctx.intakeAnswers["gbp_url"]) available.push("Google Business Profile URL");
   else missing.push("Google Business Profile URL");
