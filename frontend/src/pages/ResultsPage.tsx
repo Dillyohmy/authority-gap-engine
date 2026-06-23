@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Search, BarChart3, TrendingUp, ArrowRight, Lock, Save, MousePointerClick,
   Download, Loader2, CheckCircle2, ChevronDown, ChevronUp,
-  AlertTriangle, AlertCircle, Zap,
+  AlertTriangle, AlertCircle, Zap, Bookmark, BookmarkCheck, SlidersHorizontal, X,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -179,30 +179,39 @@ function PriorityFixCard({ fix, rank }: { fix: ScanFinding; rank: number }) {
 
 function DiagnosticSection({
   title, subtitle, icon, score, max, status, summary, children, sectionRef,
+  sectionId, reviewed, onToggleReviewed,
 }: {
   title: string; subtitle: string; icon: React.ReactNode;
   score: number; max: number; status: string; summary: string;
   children: React.ReactNode;
   sectionRef?: React.RefObject<HTMLDivElement>;
+  sectionId: string;
+  reviewed?: boolean;
+  onToggleReviewed?: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const pct = score / max;
   const numColor = pct >= 0.7 ? "text-success" : pct >= 0.5 ? "text-yellow-600" : pct >= 0.3 ? "text-orange-600" : "text-destructive";
+  const triggerId = `section-trigger-${sectionId}`;
+  const panelId  = `section-panel-${sectionId}`;
 
   return (
     <div ref={sectionRef} className="scroll-mt-[72px]">
-      <Card className="border-0 shadow-elevated rounded-xl overflow-hidden">
+      <Card className={`border-0 shadow-elevated rounded-xl overflow-hidden transition-shadow ${reviewed ? "ring-1 ring-success/30" : ""}`}>
         <button
-          className="w-full flex items-center gap-3 sm:gap-4 p-4 sm:p-5 min-h-[64px] text-left hover:bg-muted/20 active:bg-muted/30 transition-colors"
-          onClick={() => setExpanded(v => !v)}
+          id={triggerId}
           aria-expanded={expanded}
+          aria-controls={panelId}
+          className="w-full flex items-center gap-3 sm:gap-4 p-4 sm:p-5 min-h-[64px] text-left hover:bg-muted/20 active:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+          onClick={() => setExpanded(v => !v)}
         >
-          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-            {icon}
+          <div className={`h-9 w-9 sm:h-10 sm:w-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${reviewed ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
+            {reviewed ? <CheckCircle2 className="h-4 w-4" /> : icon}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[13px] sm:text-[14px] font-extrabold text-foreground">{title}</span>
+              {reviewed && <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">Reviewed</span>}
               <span className="text-[10px] text-muted-foreground hidden sm:inline">{subtitle}</span>
             </div>
             <p className="text-[11.5px] sm:text-[12px] text-muted-foreground mt-0.5 line-clamp-1">{summary}</p>
@@ -218,18 +227,54 @@ function DiagnosticSection({
             }
           </div>
         </button>
-        {expanded && (
-          <div className="border-t border-border/40">
-            {children}
+
+        <div
+          id={panelId}
+          role="region"
+          aria-labelledby={triggerId}
+          className={`grid transition-[grid-template-rows] duration-250 ease-in-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+        >
+          <div className="overflow-hidden">
+            <div className="border-t border-border/40">
+              {children}
+              {/* Mark reviewed footer */}
+              <div className="px-5 py-3 bg-muted/20 border-t border-border/30 flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground/60 font-medium">
+                  {reviewed ? "You've marked this section as reviewed" : "Mark when you're done reviewing"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onToggleReviewed?.(sectionId)}
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    reviewed
+                      ? "bg-success/10 text-success hover:bg-success/20"
+                      : "bg-muted text-muted-foreground hover:bg-success/10 hover:text-success"
+                  }`}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {reviewed ? "Reviewed" : "Mark as Reviewed"}
+                </button>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </Card>
     </div>
   );
 }
 
+const SIDEBAR_SECTIONS = [
+  { id: "overview",   label: "Diagnostic Overview" },
+  { id: "priorities", label: "Priority Fixes" },
+  { id: "visibility", label: "Visibility Gap" },
+  { id: "conversion", label: "Conversion Gap" },
+  { id: "growth",     label: "Growth Potential" },
+  { id: "action",     label: "Action Plan" },
+] as const;
+
 function StickyReportSidebar({
   score, risk, topFix, url, onExport, exporting,
+  activeSection, actionPlanCount, scrollTo,
 }: {
   score: number;
   risk: ReturnType<typeof getRiskLevel>;
@@ -237,10 +282,14 @@ function StickyReportSidebar({
   url: string;
   onExport: () => void;
   exporting: boolean;
+  activeSection: string;
+  actionPlanCount: number;
+  scrollTo: Record<string, () => void>;
 }) {
   const RiskIcon = risk.Icon;
   return (
     <div className="sticky top-[58px] space-y-3">
+      {/* Score card */}
       <Card className="border-0 shadow-elevated rounded-xl overflow-hidden">
         <div className="bg-ihd-dark-green px-5 py-4">
           <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-primary-foreground/50 mb-2">Authority Score</p>
@@ -254,45 +303,56 @@ function StickyReportSidebar({
           </span>
         </div>
         <CardContent className="p-4 space-y-4">
-          {topFix && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground">Top Priority</p>
-              <div className={`text-[9px] font-bold px-2 py-0.5 rounded-full w-fit ${RISK_BADGE[topFix.severity] ?? "bg-muted text-muted-foreground"}`}>
-                {topFix.severity.toUpperCase()} PRIORITY
-              </div>
-              <p className="text-[12px] font-semibold text-foreground leading-snug">{topFix.label}</p>
-            </div>
-          )}
           <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", url)} className="block">
             <Button className="w-full gap-2 text-[12px] font-bold rounded-lg h-11">
               Book Strategy Call <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
-          <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed">
-            Free 30-min review of your top findings
+          <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed -mt-1">
+            Free 30-min review · No obligation
           </p>
-          <div className="border-t border-border/40 pt-3">
+          <div className="border-t border-border/40 pt-3 space-y-1">
             <Button
               variant="ghost" size="sm"
               className="w-full gap-2 text-[11px] text-muted-foreground hover:text-foreground h-8 rounded-lg"
               onClick={onExport} disabled={exporting}
             >
               {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-              {exporting ? "Exporting…" : "Download PDF Report"}
+              {exporting ? "Exporting…" : "Download PDF"}
             </Button>
+            {actionPlanCount > 0 && (
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-primary/5">
+                <Bookmark className="h-3 w-3 text-primary shrink-0" />
+                <span className="text-[11px] text-primary font-semibold">{actionPlanCount} item{actionPlanCount !== 1 ? "s" : ""} in action plan</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
+      {/* Section nav */}
       <Card className="border-0 shadow-sm rounded-xl overflow-hidden">
-        <CardContent className="p-4 space-y-2">
-          <p className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground">What's in this report</p>
-          {["Visibility & search analysis", "Conversion friction audit", "Revenue opportunity model", "Priority actions ranked by impact"].map((item) => (
-            <div key={item} className="flex items-center gap-2">
-              <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
-              <span className="text-[11px] text-foreground/70 font-medium">{item}</span>
-            </div>
-          ))}
+        <CardContent className="p-3">
+          <p className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground px-2 mb-2">Jump to Section</p>
+          <nav aria-label="Report sections">
+            {SIDEBAR_SECTIONS.map(({ id, label }) => {
+              const isActive = activeSection === id;
+              return (
+                <button
+                  key={id}
+                  onClick={scrollTo[id]}
+                  className={`w-full text-left flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    isActive
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  <div className={`h-1.5 w-1.5 rounded-full shrink-0 transition-colors ${isActive ? "bg-primary" : "bg-border"}`} />
+                  {label}
+                </button>
+              );
+            })}
+          </nav>
         </CardContent>
       </Card>
     </div>
@@ -340,7 +400,21 @@ const ResultsPage = () => {
   const [unlocked, setUnlocked] = useState(false);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [readProgress, setReadProgress] = useState(0);
+  const [activeSection, setActiveSection] = useState("overview");
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [reviewedSections, setReviewedSections] = useState<Set<string>>(new Set());
+  const [actionPlan, setActionPlan] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem("aga-action-plan");
+      return saved ? new Set(JSON.parse(saved)) : new Set<string>();
+    } catch { return new Set<string>(); }
+  });
+
   const heroRef = useRef<HTMLDivElement>(null);
+  const overviewRef = useRef<HTMLDivElement>(null);
+  const prioritiesRef = useRef<HTMLDivElement>(null);
+  const finalCtaRef = useRef<HTMLDivElement>(null);
 
   // Fetch report — from backend by jobId, or from Supabase by scanId (dashboard revisit)
   useEffect(() => {
@@ -469,6 +543,61 @@ const ResultsPage = () => {
     obs.observe(el);
     return () => obs.disconnect();
   }, [unlocked]);
+
+  // Reading progress bar
+  useEffect(() => {
+    if (!unlocked) return;
+    const onScroll = () => {
+      const el = reportRef.current;
+      if (!el) return;
+      const total = el.scrollHeight - window.innerHeight;
+      setReadProgress(total > 0 ? Math.min(window.scrollY / total, 1) : 0);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [unlocked]);
+
+  // Active section tracker — watches all anchored section refs
+  useEffect(() => {
+    if (!unlocked) return;
+    const sectionMap: Array<{ id: string; ref: React.RefObject<HTMLDivElement> }> = [
+      { id: "overview",    ref: overviewRef   },
+      { id: "priorities",  ref: prioritiesRef },
+      { id: "visibility",  ref: visibilityRef },
+      { id: "conversion",  ref: conversionRef },
+      { id: "growth",      ref: opportunityRef },
+      { id: "action",      ref: finalCtaRef   },
+    ];
+    const targets = sectionMap.map(s => s.ref.current).filter(Boolean) as HTMLDivElement[];
+    if (!targets.length) return;
+    const obs = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const match = sectionMap.find(s => s.ref.current === entry.target);
+          if (match) setActiveSection(match.id);
+        }
+      }
+    }, { rootMargin: "-30% 0px -60% 0px", threshold: 0 });
+    targets.forEach(t => obs.observe(t));
+    return () => obs.disconnect();
+  }, [unlocked]);
+
+  const toggleActionPlan = (id: string) => {
+    setActionPlan(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      try { localStorage.setItem("aga-action-plan", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+
+  const toggleReviewed = (id: string) => {
+    setReviewedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const handleLeadSubmit = async (data: LeadData) => {
     if (!report) return;
@@ -650,8 +779,31 @@ const ResultsPage = () => {
   const risk = getRiskLevel(scores.authority_gap_score);
   const RiskIcon = risk.Icon;
 
+  // Scroll-to helpers passed to sidebar + tablet nav
+  const scrollTo = {
+    overview:   () => overviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    priorities: () => prioritiesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    visibility: () => visibilityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    conversion: () => conversionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    growth:     () => opportunityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    action:     () => finalCtaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+  };
+
   return (
     <div ref={reportRef} className="min-h-[calc(100vh-56px)] bg-secondary">
+
+      {/* ── Reading progress bar (fixed, sits just below header) ── */}
+      <div className="fixed top-[58px] left-0 right-0 z-20 h-[3px] bg-border/20 pointer-events-none">
+        <div
+          className="h-full bg-primary transition-[width] duration-100 ease-linear"
+          style={{ width: `${readProgress * 100}%` }}
+          role="progressbar"
+          aria-valuenow={Math.round(readProgress * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Report reading progress"
+        />
+      </div>
 
       {/* ── 1. HEADER ─────────────────────────────────────────────────────────── */}
       <header className="bg-ihd-nav text-primary-foreground sticky top-0 z-30 border-b border-white/10 shadow-sm">
@@ -796,24 +948,29 @@ const ResultsPage = () => {
 
         {/* ── TABLET SECTION NAV (md only — sidebar handles desktop, bottom bar handles mobile) */}
         <nav className="hidden md:flex lg:hidden items-center gap-2 overflow-x-auto pb-1 no-scrollbar" aria-label="Jump to section">
-          {[
-            { label: "Overview", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) },
-            { label: "Visibility", onClick: () => visibilityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },
-            { label: "Conversion", onClick: () => conversionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },
-            { label: "Growth Potential", onClick: () => opportunityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },
-          ].map(({ label, onClick }) => (
-            <button
-              key={label}
-              onClick={onClick}
-              className="shrink-0 text-[12px] font-semibold px-4 py-2 rounded-full bg-card border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-card transition-colors min-h-[36px]"
-            >
-              {label}
-            </button>
-          ))}
+          {SIDEBAR_SECTIONS.map(({ id, label }) => {
+            const isActive = activeSection === id;
+            return (
+              <button
+                key={id}
+                onClick={scrollTo[id]}
+                className={`shrink-0 text-[12px] font-semibold px-4 py-2 rounded-full border transition-colors min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </nav>
 
         {/* ── 3. EXECUTIVE SNAPSHOT ───────────────────────────────────────────── */}
         <motion.section
+          ref={overviewRef}
+          id="section-overview"
+          className="scroll-mt-[72px]"
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
         >
           <SectionHeading
@@ -862,6 +1019,9 @@ const ResultsPage = () => {
         {/* ── 4. PRIORITY FIXES ───────────────────────────────────────────────── */}
         {top_fixes.length > 0 && (
           <motion.section
+            ref={prioritiesRef}
+            id="section-priorities"
+            className="scroll-mt-[72px]"
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
           >
             <SectionHeading
@@ -898,12 +1058,48 @@ const ResultsPage = () => {
         <motion.section
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
         >
-          <SectionHeading
-            title="Full Diagnostic"
-            subtitle="Deep analysis across all three dimensions — expand each section to view complete findings"
-          />
-          <div className="space-y-4 mt-4">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-0 sm:justify-between mb-4">
+            <SectionHeading
+              title="Full Diagnostic"
+              subtitle="Expand each section · bookmark issues · mark sections reviewed"
+            />
+            {/* Issue severity filter chips */}
+            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+              <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              {[
+                { id: null,     label: "All" },
+                { id: "high",   label: "High Priority" },
+                { id: "medium", label: "Medium" },
+                { id: "low",    label: "Quick Wins" },
+              ].map(({ id, label }) => {
+                const isActive = activeFilter === id;
+                return (
+                  <button
+                    key={String(id)}
+                    onClick={() => setActiveFilter(isActive ? null : id)}
+                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-muted-foreground border-border/60 hover:border-primary/40 hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+              {activeFilter && (
+                <button
+                  onClick={() => setActiveFilter(null)}
+                  aria-label="Clear filter"
+                  className="h-6 w-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
 
+          <div className="space-y-4">
             <DiagnosticSection
               title="Visibility Gap"
               subtitle="Search Authority Analysis"
@@ -913,6 +1109,9 @@ const ResultsPage = () => {
               status={getStatusLabel(scores.visibility_score, 40)}
               summary={visibility.summary}
               sectionRef={visibilityRef}
+              sectionId="visibility"
+              reviewed={reviewedSections.has("visibility")}
+              onToggleReviewed={toggleReviewed}
             >
               <IntelligenceBlock
                 title="Visibility Gap"
@@ -928,6 +1127,9 @@ const ResultsPage = () => {
                   strategicImplication: visibility.strategic_implication,
                   recommendedDirections: visibility.recommended_directions,
                 }}
+                activeFilter={activeFilter}
+                actionPlanItems={actionPlan}
+                onToggleActionPlan={toggleActionPlan}
               />
             </DiagnosticSection>
 
@@ -940,6 +1142,9 @@ const ResultsPage = () => {
               status={getStatusLabel(scores.conversion_score, 40)}
               summary={conversion.summary}
               sectionRef={conversionRef}
+              sectionId="conversion"
+              reviewed={reviewedSections.has("conversion")}
+              onToggleReviewed={toggleReviewed}
             >
               <IntelligenceBlock
                 title="Conversion Gap"
@@ -955,6 +1160,9 @@ const ResultsPage = () => {
                   strategicImplication: conversion.strategic_implication,
                   recommendedDirections: conversion.recommended_directions,
                 }}
+                activeFilter={activeFilter}
+                actionPlanItems={actionPlan}
+                onToggleActionPlan={toggleActionPlan}
               />
             </DiagnosticSection>
 
@@ -967,6 +1175,9 @@ const ResultsPage = () => {
               status={getStatusLabel(scores.opportunity_score, scores.opportunity_score > 20 ? 100 : 20)}
               summary={opportunity.summary}
               sectionRef={opportunityRef}
+              sectionId="growth"
+              reviewed={reviewedSections.has("growth")}
+              onToggleReviewed={toggleReviewed}
             >
               <IntelligenceBlock
                 title="Growth Potential"
@@ -984,6 +1195,9 @@ const ResultsPage = () => {
                 }}
                 confidenceLevel={opportunity.confidence_level}
                 modelInputs={opportunity.model_inputs}
+                activeFilter={activeFilter}
+                actionPlanItems={actionPlan}
+                onToggleActionPlan={toggleActionPlan}
               />
             </DiagnosticSection>
           </div>
@@ -1001,6 +1215,9 @@ const ResultsPage = () => {
 
         {/* ── 6. FINAL ACTION PLAN ────────────────────────────────────────────── */}
         <motion.section
+          ref={finalCtaRef}
+          id="section-action"
+          className="scroll-mt-[72px]"
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
         >
           <Card className="shadow-elevated border-0 rounded-xl overflow-hidden">
@@ -1075,6 +1292,9 @@ const ResultsPage = () => {
             url={input.website_url}
             onExport={handleExportPdf}
             exporting={exporting}
+            activeSection={activeSection}
+            actionPlanCount={actionPlan.size}
+            scrollTo={scrollTo}
           />
         </div>
 
