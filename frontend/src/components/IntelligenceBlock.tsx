@@ -117,14 +117,14 @@ const IntelligenceBlock = ({
               </div>
               <span className="text-[11px] uppercase tracking-[0.13em] font-extrabold text-foreground/65">Opportunity Model Inputs</span>
             </div>
-            <ul className="space-y-2 pl-0.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {modelInputs.map((m) => (
-                <li key={m} className="text-[12px] text-foreground/60 flex items-start gap-2">
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 mt-0.5 shrink-0" />
-                  <span>{m}</span>
-                </li>
+                <div key={m} className="flex items-start gap-2 rounded-lg bg-card border border-border/60 px-3 py-2">
+                  <ChevronRight className="h-3 w-3 text-muted-foreground/50 mt-0.5 shrink-0" />
+                  <span className="text-[11.5px] text-foreground/65 leading-snug">{m}</span>
+                </div>
               ))}
-            </ul>
+            </div>
             {confidenceLevel && (
               <div className="flex items-center gap-2.5 pt-3 border-t border-dashed">
                 <div className="h-2 w-2 rounded-full bg-info animate-pulse shrink-0" />
@@ -149,7 +149,7 @@ const IntelligenceBlock = ({
         </div>
 
         {filteredFindings.length > 0 ? (
-          <div className="space-y-2" role="list">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="list">
             {filteredFindings.map((f, idx) => {
               const isOpen = openFindingId === f.id;
               const inPlan = actionPlanItems?.has(f.id) ?? false;

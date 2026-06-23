@@ -158,39 +158,35 @@ function PriorityFixCard({ fix, rank }: { fix: ScanFinding; rank: number }) {
   };
 
   return (
-    <Card className={`border-0 shadow-elevated rounded-xl overflow-hidden ${SEVERITY_BORDER[fix.severity] ?? ""}`}>
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start gap-4">
-          {/* Rank circle — tinted by severity */}
-          <div className={`h-9 w-9 rounded-full text-[14px] font-extrabold flex items-center justify-center shrink-0 mt-0.5 ${RANK_BG[fix.severity] ?? "bg-primary/10 text-primary"}`}>
+    <Card className={`border-0 shadow-elevated rounded-xl overflow-hidden h-full ${SEVERITY_BORDER[fix.severity] ?? ""}`}>
+      <CardContent className="p-4 flex flex-col h-full gap-2.5">
+        {/* Top row: rank + badge */}
+        <div className="flex items-center justify-between gap-2">
+          <div className={`h-6 w-6 rounded-full text-[11px] font-extrabold flex items-center justify-center shrink-0 ${RANK_BG[fix.severity] ?? "bg-primary/10 text-primary"}`}>
             {rank}
           </div>
+          <SeverityBadge severity={fix.severity} />
+        </div>
 
-          <div className="flex-1 min-w-0 space-y-2.5">
-            {/* Title row */}
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <p className="text-[14px] font-bold text-foreground leading-snug flex-1 min-w-0">{fix.label}</p>
-              <SeverityBadge severity={fix.severity} />
+        {/* Title */}
+        <p className="text-[13px] font-bold text-foreground leading-snug flex-1">{fix.label}</p>
+
+        {/* Description — clamped to 2 lines */}
+        {fix.description && (
+          <p className="text-[11.5px] text-muted-foreground leading-relaxed line-clamp-2">{fix.description}</p>
+        )}
+
+        {/* Meta row */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 mt-auto">
+          {fix.impact && (
+            <div className="flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+              <span className="text-[10.5px] text-muted-foreground line-clamp-1">{fix.impact}</span>
             </div>
-
-            {/* Description */}
-            {fix.description && (
-              <p className="text-[12.5px] text-muted-foreground leading-relaxed">{fix.description}</p>
-            )}
-
-            {/* Meta row */}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-5 pt-0.5">
-              {fix.impact && (
-                <div className="flex items-center gap-1.5">
-                  <TrendingUp className="h-3 w-3 text-muted-foreground/70 shrink-0" />
-                  <span className="text-[11px] text-muted-foreground">{fix.impact}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1.5">
-                <Zap className="h-3 w-3 text-muted-foreground/70 shrink-0" />
-                <span className="text-[11px] text-muted-foreground">{EFFORT[fix.severity]}</span>
-              </div>
-            </div>
+          )}
+          <div className="flex items-center gap-1">
+            <Zap className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+            <span className="text-[10.5px] text-muted-foreground">{EFFORT[fix.severity]}</span>
           </div>
         </div>
       </CardContent>
@@ -950,13 +946,15 @@ const ResultsPage = () => {
                   <p className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground">
                     Top Business Risks Identified
                   </p>
-                  <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {top_fixes.slice(0, 3).map((fix, i) => (
-                      <div key={i} className="flex items-start gap-2.5">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${RISK_BADGE[fix.severity] ?? "bg-muted text-muted-foreground"}`}>
-                          {fix.severity.toUpperCase()}
+                      <div key={i} className={`rounded-lg border bg-card px-3 py-2.5 space-y-1.5 ${
+                        fix.severity === "high" ? "border-[#FECACA]" : fix.severity === "medium" ? "border-[#FDE68A]" : "border-[#BBF7D0]"
+                      }`}>
+                        <span className={`inline-flex text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wide ${RISK_BADGE[fix.severity] ?? "bg-muted text-muted-foreground"}`}>
+                          {fix.severity === "high" ? "Critical" : fix.severity === "medium" ? "Warning" : "Quick Win"}
                         </span>
-                        <p className="text-[13px] font-semibold text-foreground leading-snug">{fix.label}</p>
+                        <p className="text-[12px] font-semibold text-foreground leading-snug">{fix.label}</p>
                       </div>
                     ))}
                   </div>
@@ -1139,7 +1137,7 @@ const ResultsPage = () => {
               title="Priority Fixes"
               subtitle="The highest-impact changes to make first, ranked by business impact"
             />
-            <div className="space-y-3 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
               {top_fixes.map((fix, i) => (
                 <motion.div
                   key={fix.id ?? i}
