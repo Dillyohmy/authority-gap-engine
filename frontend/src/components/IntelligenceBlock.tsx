@@ -3,7 +3,6 @@ import {
   AlertTriangle, ArrowRight, Brain, Crosshair, Layers, Info, ChevronRight,
   ChevronDown, ChevronUp, Bookmark, BookmarkCheck, TrendingUp,
 } from "lucide-react";
-import SeverityBadge from "./SeverityBadge";
 import type { ScanFinding } from "@/types/scanReport";
 
 /** Adapted GapSection shape for IntelligenceBlock consumption */
@@ -38,11 +37,10 @@ const EFFORT_LABEL: Record<string, string> = {
   low: "Quick win",
 };
 
-/** Left-border accent color per severity */
-const FINDING_ACCENT: Record<string, string> = {
-  high:   "border-l-[3px] border-l-[#DC2626]",
-  medium: "border-l-[3px] border-l-[#D97706]",
-  low:    "border-l-[3px] border-l-[#16A34A]",
+const FINDING_KICKER: Record<string, { gradient: string; text: string; label: string }> = {
+  high:   { gradient: "linear-gradient(180deg,#EF4444 0%,#DC2626 55%,#B91C1C 100%)", text: "#fff",    label: "Critical Issue" },
+  medium: { gradient: "linear-gradient(180deg,#FBBF24 0%,#D97706 55%,#B45309 100%)", text: "#1a1200", label: "Warning"        },
+  low:    { gradient: "linear-gradient(180deg,#34D399 0%,#16A34A 55%,#15803D 100%)", text: "#fff",    label: "Quick Win"      },
 };
 
 const IntelligenceBlock = ({
@@ -160,43 +158,53 @@ const IntelligenceBlock = ({
               const isFlash = justAdded === f.id;
               const triggerId = `finding-trigger-${f.id}`;
               const panelId = `finding-panel-${f.id}`;
-              const accentClass = FINDING_ACCENT[f.severity] ?? "";
+              const kicker = FINDING_KICKER[f.severity] ?? FINDING_KICKER.medium;
 
               return (
                 <div
                   key={f.id}
                   role="listitem"
-                  className={`rounded-xl border bg-card overflow-hidden transition-all duration-200 ${accentClass} ${
+                  className={`rounded-xl border bg-card overflow-hidden transition-all duration-200 ${
                     isOpen
                       ? "shadow-md ring-1 ring-primary/10"
                       : "shadow-sm hover:shadow-md hover:border-border/80"
                   } ${isFlash ? "ring-1 ring-primary/25" : ""}`}
                 >
+                  {/* ── Kicker header ── */}
+                  <div
+                    style={{
+                      background: kicker.gradient,
+                      color: kicker.text,
+                      padding: "7px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.10)",
+                    }}
+                  >
+                    <span style={{ fontSize: "0.65rem", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                      {kicker.label}
+                    </span>
+                    <span style={{ fontSize: "0.65rem", fontWeight: 700, opacity: 0.7, letterSpacing: "0.04em" }}>
+                      {EFFORT_LABEL[f.severity]}
+                    </span>
+                  </div>
+
                   {/* ── Collapsed trigger ── */}
                   <button
                     id={triggerId}
                     aria-expanded={isOpen}
                     aria-controls={panelId}
-                    className="w-full text-left flex items-start gap-3 px-4 py-3.5 min-h-[60px] hover:bg-muted/15 active:bg-muted/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                    className="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-muted/15 active:bg-muted/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                     onClick={() => toggleFinding(f.id)}
                   >
-                    {/* Index */}
-                    <div className="h-5 w-5 rounded bg-foreground/[0.04] border border-border/60 flex items-center justify-center shrink-0 mt-1">
-                      <span className="text-[9px] font-extrabold text-muted-foreground/70 tabular-nums leading-none">
-                        {String(idx + 1).padStart(2, "0")}
-                      </span>
-                    </div>
-
                     {/* Title + meta */}
                     <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-start gap-2 flex-wrap">
-                        <span className="text-[13px] font-bold text-foreground leading-snug flex-1 min-w-[120px]">{f.label}</span>
-                        <SeverityBadge severity={f.severity} />
-                      </div>
+                      <span className="text-[12.5px] font-bold text-foreground leading-snug block">{f.label}</span>
                       {!isOpen && f.impact && (
-                        <p className="text-[11.5px] text-muted-foreground leading-snug line-clamp-1 pr-2">{f.impact}</p>
+                        <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1 pr-2">{f.impact}</p>
                       )}
-                      <span className="text-[10px] text-muted-foreground/50 font-medium">{EFFORT_LABEL[f.severity]}</span>
                     </div>
 
                     {/* Bookmark + chevron */}

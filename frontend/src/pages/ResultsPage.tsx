@@ -143,29 +143,46 @@ function SnapshotCard({
   );
 }
 
+const KICKER: Record<string, { gradient: string; text: string; label: string }> = {
+  high:   { gradient: "linear-gradient(180deg,#EF4444 0%,#DC2626 55%,#B91C1C 100%)", text: "#fff",    label: "Critical Issue" },
+  medium: { gradient: "linear-gradient(180deg,#FBBF24 0%,#D97706 55%,#B45309 100%)", text: "#1a1200", label: "Warning"        },
+  low:    { gradient: "linear-gradient(180deg,#34D399 0%,#16A34A 55%,#15803D 100%)", text: "#fff",    label: "Quick Win"      },
+};
+
 function PriorityFixCard({ fix, rank }: { fix: ScanFinding; rank: number }) {
   const EFFORT: Record<string, string> = { high: "Significant effort", medium: "Moderate effort", low: "Quick win" };
-
-  const SEVERITY_BORDER: Record<string, string> = {
-    high:   "border-l-[4px] border-l-[#DC2626]",
-    medium: "border-l-[4px] border-l-[#D97706]",
-    low:    "border-l-[4px] border-l-[#16A34A]",
-  };
   const RANK_BG: Record<string, string> = {
-    high:   "bg-[#FEF2F2] text-[#DC2626]",
-    medium: "bg-[#FFFBEB] text-[#D97706]",
-    low:    "bg-[#F0FDF4] text-[#16A34A]",
+    high:   "bg-white/20 text-white",
+    medium: "bg-black/10 text-[#1a1200]",
+    low:    "bg-white/20 text-white",
   };
+  const k = KICKER[fix.severity] ?? KICKER.medium;
 
   return (
-    <Card className={`border-0 shadow-elevated rounded-xl overflow-hidden h-full ${SEVERITY_BORDER[fix.severity] ?? ""}`}>
-      <CardContent className="p-4 flex flex-col h-full gap-2.5">
-        {/* Top row: rank + badge */}
-        <div className="flex items-center justify-between gap-2">
-          <div className={`h-6 w-6 rounded-full text-[11px] font-extrabold flex items-center justify-center shrink-0 ${RANK_BG[fix.severity] ?? "bg-primary/10 text-primary"}`}>
+    <Card className="border-0 shadow-elevated rounded-xl overflow-hidden h-full">
+      <CardContent className="p-4 flex flex-col h-full gap-3">
+        {/* ── Kicker header — full-bleed gradient ── */}
+        <div
+          style={{
+            width: "calc(100% + 32px)",
+            margin: "-16px -16px 0",
+            padding: "10px 16px",
+            background: k.gradient,
+            color: k.text,
+            borderRadius: "0.75rem 0.75rem 0 0",
+            boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "8px",
+          }}
+        >
+          <span style={{ fontSize: "0.68rem", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+            {k.label}
+          </span>
+          <span className={`h-5 w-5 rounded-full text-[11px] font-extrabold flex items-center justify-center shrink-0 ${RANK_BG[fix.severity]}`}>
             {rank}
-          </div>
-          <SeverityBadge severity={fix.severity} />
+          </span>
         </div>
 
         {/* Title */}
@@ -177,7 +194,7 @@ function PriorityFixCard({ fix, rank }: { fix: ScanFinding; rank: number }) {
         )}
 
         {/* Meta row */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 mt-auto">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 mt-auto border-t border-border/40 pt-2.5">
           {fix.impact && (
             <div className="flex items-center gap-1">
               <TrendingUp className="h-3 w-3 text-muted-foreground/60 shrink-0" />
