@@ -74,9 +74,9 @@ const RISK_BADGE: Record<string, string> = {
 
 function SectionHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="space-y-0.5">
-      <h2 className="text-[16px] sm:text-[18px] font-extrabold text-foreground">{title}</h2>
-      {subtitle && <p className="text-[12px] text-muted-foreground leading-relaxed">{subtitle}</p>}
+    <div className="space-y-1">
+      <h2 className="text-[15px] sm:text-[17px] lg:text-[18px] font-extrabold text-foreground tracking-tight">{title}</h2>
+      {subtitle && <p className="text-[12px] sm:text-[12.5px] text-muted-foreground leading-relaxed max-w-[60ch]">{subtitle}</p>}
     </div>
   );
 }
@@ -118,7 +118,7 @@ function SnapshotCard({
           </div>
 
           <div className="flex items-center justify-between gap-2">
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${getSeverityBg(pct)}`}>{status}</span>
+            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${getSeverityBg(pct)}`}>{status}</span>
             {highlight && <span className="text-[10px] font-bold text-success">{highlight}</span>}
           </div>
 
@@ -143,22 +143,22 @@ function PriorityFixCard({ fix, rank }: { fix: ScanFinding; rank: number }) {
 
   return (
     <Card className="border-0 shadow-elevated rounded-xl overflow-hidden">
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary text-[13px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary text-[13px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">
             {rank}
           </div>
-          <div className="flex-1 space-y-2.5">
+          <div className="flex-1 min-w-0 space-y-2">
             <div className="flex items-start justify-between gap-3 flex-wrap">
-              <p className="text-[14px] font-bold text-foreground leading-snug flex-1 min-w-0">{fix.label}</p>
-              <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wide shrink-0 ${BADGE[fix.severity] ?? "bg-muted text-muted-foreground"}`}>
+              <p className="text-[13px] sm:text-[14px] font-bold text-foreground leading-snug flex-1 min-w-0">{fix.label}</p>
+              <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wide shrink-0 ${BADGE[fix.severity] ?? "bg-muted text-muted-foreground"}`}>
                 {fix.severity} priority
               </span>
             </div>
             {fix.description && (
-              <p className="text-[12px] text-muted-foreground leading-relaxed">{fix.description}</p>
+              <p className="text-[12px] sm:text-[12.5px] text-muted-foreground leading-relaxed">{fix.description}</p>
             )}
-            <div className="flex flex-wrap items-center gap-4 pt-0.5">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-0.5">
               {fix.impact && (
                 <div className="flex items-center gap-1.5">
                   <TrendingUp className="h-3 w-3 text-muted-foreground shrink-0" />
@@ -193,24 +193,24 @@ function DiagnosticSection({
     <div ref={sectionRef} className="scroll-mt-[72px]">
       <Card className="border-0 shadow-elevated rounded-xl overflow-hidden">
         <button
-          className="w-full flex items-center gap-4 p-5 text-left hover:bg-muted/20 transition-colors"
+          className="w-full flex items-center gap-3 sm:gap-4 p-4 sm:p-5 min-h-[64px] text-left hover:bg-muted/20 active:bg-muted/30 transition-colors"
           onClick={() => setExpanded(v => !v)}
           aria-expanded={expanded}
         >
-          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
             {icon}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[14px] font-extrabold text-foreground">{title}</span>
+              <span className="text-[13px] sm:text-[14px] font-extrabold text-foreground">{title}</span>
               <span className="text-[10px] text-muted-foreground hidden sm:inline">{subtitle}</span>
             </div>
-            <p className="text-[12px] text-muted-foreground mt-0.5 line-clamp-1">{summary}</p>
+            <p className="text-[11.5px] sm:text-[12px] text-muted-foreground mt-0.5 line-clamp-1">{summary}</p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="text-right hidden sm:block">
-              <span className={`text-[20px] font-extrabold leading-none ${numColor}`}>{Math.round(pct * 100)}%</span>
-              <p className="text-[9px] text-muted-foreground font-medium mt-0.5 whitespace-nowrap">{status}</p>
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="text-right">
+              <span className={`text-[17px] sm:text-[20px] font-extrabold leading-none ${numColor}`}>{Math.round(pct * 100)}%</span>
+              <p className="text-[9px] text-muted-foreground font-medium mt-0.5 whitespace-nowrap hidden sm:block">{status}</p>
             </div>
             {expanded
               ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -240,7 +240,7 @@ function StickyReportSidebar({
 }) {
   const RiskIcon = risk.Icon;
   return (
-    <div className="sticky top-[64px] space-y-3">
+    <div className="sticky top-[58px] space-y-3">
       <Card className="border-0 shadow-elevated rounded-xl overflow-hidden">
         <div className="bg-ihd-dark-green px-5 py-4">
           <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-primary-foreground/50 mb-2">Authority Score</p>
@@ -264,7 +264,7 @@ function StickyReportSidebar({
             </div>
           )}
           <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", url)} className="block">
-            <Button className="w-full gap-2 text-[12px] font-bold rounded-lg h-10">
+            <Button className="w-full gap-2 text-[12px] font-bold rounded-lg h-11">
               Book Strategy Call <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
@@ -693,10 +693,14 @@ const ResultsPage = () => {
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="bg-card border-b border-border/40"
       >
-        <div className="container max-w-6xl px-4 py-10 sm:py-12">
-          <div className="grid lg:grid-cols-[1fr_210px] gap-10 items-start">
+        <div className="container max-w-6xl px-4 py-7 sm:py-10 lg:py-12">
+          {/*
+            Mobile/tablet: flex-col-reverse → score ring renders above text (DOM second = visually first)
+            Desktop (lg): switches to CSS grid → text left, score ring right (DOM order = column order)
+          */}
+          <div className="flex flex-col-reverse gap-7 sm:gap-8 lg:grid lg:grid-cols-[1fr_220px] lg:gap-10 lg:items-start">
 
-            {/* Left: Diagnosis text */}
+            {/* ── Left column: Diagnosis text (DOM first → visually second on mobile) */}
             <div className="space-y-5">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <span className={`inline-flex items-center gap-1.5 text-[11px] font-extrabold px-3 py-1.5 rounded-full uppercase tracking-wide ${risk.bgColor} ${risk.textColor}`}>
@@ -708,11 +712,11 @@ const ResultsPage = () => {
                 </span>
               </div>
 
-              <h1 className="text-[22px] sm:text-[28px] font-extrabold text-foreground leading-[1.25]">
+              <h1 className="text-[20px] sm:text-[24px] lg:text-[28px] font-extrabold text-foreground leading-[1.25] max-w-[22ch]">
                 {getDiagnosis(scores.authority_gap_score, input.clinic_type)}
               </h1>
 
-              <p className="text-[13px] text-muted-foreground/80 leading-relaxed max-w-xl">
+              <p className="text-[13px] text-muted-foreground/80 leading-relaxed max-w-[56ch]">
                 Your authority score of{" "}
                 <strong className="text-foreground font-bold">{scores.authority_gap_score}/100</strong>{" "}
                 {getScoreContext(scores.authority_gap_score)}
@@ -724,10 +728,10 @@ const ResultsPage = () => {
                   <p className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground">
                     Top Business Risks Identified
                   </p>
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {top_fixes.slice(0, 3).map((fix, i) => (
                       <div key={i} className="flex items-start gap-2.5">
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${RISK_BADGE[fix.severity] ?? "bg-muted text-muted-foreground"}`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${RISK_BADGE[fix.severity] ?? "bg-muted text-muted-foreground"}`}>
                           {fix.severity.toUpperCase()}
                         </span>
                         <p className="text-[13px] font-semibold text-foreground leading-snug">{fix.label}</p>
@@ -738,18 +742,18 @@ const ResultsPage = () => {
               )}
 
               {/* CTAs */}
-              <div className="flex flex-col gap-3 pt-2 sm:max-w-md">
-                <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
-                  <Button size="lg" className="w-full gap-2 text-[14px] rounded-lg px-7 h-12 font-bold shadow-md">
+              <div className="flex flex-col gap-2.5 pt-1">
+                <Link to="/strategy-call" className="block" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
+                  <Button size="lg" className="w-full sm:w-auto gap-2 text-[14px] rounded-lg px-7 h-12 font-bold shadow-md">
                     Book My Strategy Call <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <p className="text-[11px] text-muted-foreground/60 text-center sm:text-left">
+                <p className="text-[11px] text-muted-foreground/60">
                   Free 30-min session · We walk through your top findings together
                 </p>
                 <Button
                   variant="outline" size="lg"
-                  className="border-border text-foreground gap-2 text-[13px] rounded-lg px-6 h-10 font-semibold"
+                  className="w-full sm:w-auto border-border text-foreground gap-2 text-[13px] rounded-lg px-6 h-11 font-semibold"
                   onClick={handleExportPdf} disabled={exporting}
                 >
                   {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -758,21 +762,27 @@ const ResultsPage = () => {
               </div>
             </div>
 
-            {/* Right: Score ring */}
-            <div className="flex flex-col items-center gap-3 lg:pt-2 lg:border-l lg:border-border/40 lg:pl-10">
-              <ScoreRing score={scores.authority_gap_score} label="" size={160} />
-              <div className="text-center">
-                <p className="text-[11px] font-bold text-foreground">Overall Authority Score</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Out of 100 possible points</p>
+            {/* ── Right column: Score ring (DOM second → visually first on mobile via flex-col-reverse) */}
+            <div className="flex items-center justify-center gap-6 sm:gap-8 lg:flex-col lg:gap-4 lg:pt-2 lg:border-l lg:border-border/40 lg:pl-10">
+              {/* Ring */}
+              <div className="shrink-0">
+                <ScoreRing score={scores.authority_gap_score} label="" size={140} />
               </div>
-              <div className="grid grid-cols-2 gap-2 w-full mt-2">
-                <div className="text-center p-2.5 rounded-lg bg-muted/50">
-                  <p className="text-[16px] font-extrabold text-foreground">{scores.visibility_score}<span className="text-[10px] text-muted-foreground font-normal">/40</span></p>
-                  <p className="text-[9px] text-muted-foreground font-medium mt-0.5">Visibility</p>
+              {/* Score details — row on mobile (next to ring), stacked on desktop */}
+              <div className="space-y-2.5 min-w-[140px] lg:w-full lg:text-center">
+                <div>
+                  <p className="text-[12px] font-bold text-foreground lg:text-center">Overall Authority Score</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 lg:text-center">Out of 100 possible points</p>
                 </div>
-                <div className="text-center p-2.5 rounded-lg bg-muted/50">
-                  <p className="text-[16px] font-extrabold text-foreground">{scores.conversion_score}<span className="text-[10px] text-muted-foreground font-normal">/40</span></p>
-                  <p className="text-[9px] text-muted-foreground font-medium mt-0.5">Conversion</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-center p-2.5 rounded-lg bg-muted/50">
+                    <p className="text-[15px] font-extrabold text-foreground">{scores.visibility_score}<span className="text-[10px] text-muted-foreground font-normal">/40</span></p>
+                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Visibility</p>
+                  </div>
+                  <div className="text-center p-2.5 rounded-lg bg-muted/50">
+                    <p className="text-[15px] font-extrabold text-foreground">{scores.conversion_score}<span className="text-[10px] text-muted-foreground font-normal">/40</span></p>
+                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Conversion</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -780,9 +790,27 @@ const ResultsPage = () => {
         </div>
       </motion.section>
 
-      <div className="container max-w-6xl px-4 py-7 sm:py-8 pb-[84px] lg:pb-8">
+      <div className="container max-w-6xl px-4 py-5 sm:py-7 lg:py-8 pb-[80px] lg:pb-8">
         <div className="grid lg:grid-cols-[1fr_268px] gap-8 items-start">
-        <div className="space-y-8 sm:space-y-10 min-w-0">
+        <div className="space-y-7 sm:space-y-8 lg:space-y-10 min-w-0">
+
+        {/* ── TABLET SECTION NAV (md only — sidebar handles desktop, bottom bar handles mobile) */}
+        <nav className="hidden md:flex lg:hidden items-center gap-2 overflow-x-auto pb-1 no-scrollbar" aria-label="Jump to section">
+          {[
+            { label: "Overview", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) },
+            { label: "Visibility", onClick: () => visibilityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },
+            { label: "Conversion", onClick: () => conversionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },
+            { label: "Growth Potential", onClick: () => opportunityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }) },
+          ].map(({ label, onClick }) => (
+            <button
+              key={label}
+              onClick={onClick}
+              className="shrink-0 text-[12px] font-semibold px-4 py-2 rounded-full bg-card border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-card transition-colors min-h-[36px]"
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
 
         {/* ── 3. EXECUTIVE SNAPSHOT ───────────────────────────────────────────── */}
         <motion.section
@@ -792,7 +820,8 @@ const ResultsPage = () => {
             title="Diagnostic Overview"
             subtitle="Your performance across three core patient acquisition dimensions — click any card to jump to the full analysis"
           />
-          <div className="grid sm:grid-cols-3 gap-4 mt-4">
+          {/* 1-col on phone · 2-col on sm tablet · 3-col on lg desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-4">
             <SnapshotCard
               title="Visibility Gap"
               subtitle="Search Authority"
@@ -813,17 +842,20 @@ const ResultsPage = () => {
               status={getStatusLabel(scores.conversion_score, 40)}
               onClick={() => conversionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
             />
-            <SnapshotCard
-              title="Growth Potential"
-              subtitle="Revenue Opportunity"
-              score={scores.opportunity_score}
-              max={scores.opportunity_score > 20 ? 100 : 20}
-              icon={<TrendingUp className="h-4 w-4" />}
-              summary={opportunity.summary}
-              status={getStatusLabel(scores.opportunity_score, scores.opportunity_score > 20 ? 100 : 20)}
-              onClick={() => opportunityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              displayValue={`$${estimated_revenue_low.toLocaleString()}–$${estimated_revenue_high.toLocaleString()}/mo`}
-            />
+            {/* On sm tablet: spans both columns so the revenue card gets full width below the pair */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <SnapshotCard
+                title="Growth Potential"
+                subtitle="Revenue Opportunity"
+                score={scores.opportunity_score}
+                max={scores.opportunity_score > 20 ? 100 : 20}
+                icon={<TrendingUp className="h-4 w-4" />}
+                summary={opportunity.summary}
+                status={getStatusLabel(scores.opportunity_score, scores.opportunity_score > 20 ? 100 : 20)}
+                onClick={() => opportunityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                displayValue={`$${estimated_revenue_low.toLocaleString()}–$${estimated_revenue_high.toLocaleString()}/mo`}
+              />
+            </div>
           </div>
         </motion.section>
 
@@ -845,16 +877,16 @@ const ResultsPage = () => {
         )}
 
         {/* ── Mid-page contextual CTA ─────────────────────────────────────────── */}
-        <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/[0.05] via-primary/[0.03] to-transparent p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+        <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/[0.05] via-primary/[0.03] to-transparent p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
           <div className="flex-1 space-y-1">
-            <p className="text-[15px] font-extrabold text-foreground leading-snug">Want help fixing these issues?</p>
-            <p className="text-[12px] text-muted-foreground leading-relaxed">
+            <p className="text-[14px] sm:text-[15px] font-extrabold text-foreground leading-snug">Want help fixing these issues?</p>
+            <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[52ch]">
               Let's turn this diagnostic into a clear, prioritized action plan for your practice.
             </p>
           </div>
-          <div className="flex flex-col items-start sm:items-end gap-1.5 shrink-0">
-            <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
-              <Button className="gap-2 text-[13px] font-bold rounded-lg h-10 px-5">
+          <div className="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto shrink-0">
+            <Link to="/strategy-call" className="block w-full sm:w-auto" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
+              <Button className="w-full sm:w-auto gap-2 text-[13px] font-bold rounded-lg h-11 px-5">
                 Get My Action Plan <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
@@ -1052,20 +1084,26 @@ const ResultsPage = () => {
       {/* ── MOBILE STICKY BOTTOM BAR ─────────────────────────────────────────── */}
       {showStickyBar && (
         <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-          <div className="bg-ihd-nav/96 backdrop-blur-md border-t border-white/10 shadow-lg px-4 py-3 safe-area-inset-bottom">
+          <div
+            className="bg-ihd-nav/97 backdrop-blur-md border-t border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.18)] px-4 pt-3"
+            style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }}
+          >
             <div className="flex items-center gap-3 max-w-lg mx-auto">
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-primary-foreground/55 uppercase tracking-wider font-bold leading-none mb-0.5">
+                <p className="text-[10px] text-primary-foreground/50 uppercase tracking-[0.14em] font-bold leading-none mb-1">
                   Authority Score
                 </p>
-                <p className="text-[14px] font-extrabold text-primary-foreground leading-none truncate">
-                  {scores.authority_gap_score}/100 · {risk.label}
+                <p className="text-[15px] font-extrabold text-primary-foreground leading-none truncate">
+                  {scores.authority_gap_score}<span className="text-primary-foreground/50 font-semibold text-[12px]">/100</span>
+                  <span className={`ml-2 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${risk.bgColor} ${risk.textColor}`}>
+                    {risk.label}
+                  </span>
                 </p>
               </div>
-              <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
+              <Link to="/strategy-call" className="shrink-0" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
                 <Button
                   size="sm"
-                  className="gap-1.5 text-[12px] font-bold h-9 px-4 rounded-lg bg-primary-foreground text-primary hover:bg-primary-foreground/90 shrink-0"
+                  className="gap-1.5 text-[12px] font-bold h-11 px-4 rounded-lg bg-primary-foreground text-primary hover:bg-primary-foreground/90"
                 >
                   Book Strategy Call <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
