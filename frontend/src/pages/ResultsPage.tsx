@@ -15,6 +15,7 @@ import { trackEvent } from "@/lib/tracking";
 import { getScanResult } from "@/lib/scanClient";
 import ScoreRing from "@/components/ScoreRing";
 import IntelligenceBlock from "@/components/IntelligenceBlock";
+import SeverityBadge from "@/components/SeverityBadge";
 import ResultsTeaser from "@/components/ResultsTeaser";
 import LeadCaptureForm, { type LeadData } from "@/components/LeadCaptureForm";
 import ScanError from "@/components/ScanError";
@@ -74,9 +75,9 @@ const RISK_BADGE: Record<string, string> = {
 
 function SectionHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="space-y-1">
-      <h2 className="text-[15px] sm:text-[17px] lg:text-[18px] font-extrabold text-foreground tracking-tight">{title}</h2>
-      {subtitle && <p className="text-[12px] sm:text-[12.5px] text-muted-foreground leading-relaxed max-w-[60ch]">{subtitle}</p>}
+    <div className="space-y-1.5">
+      <h2 className="text-[18px] sm:text-[20px] lg:text-[22px] font-extrabold text-foreground tracking-tight leading-tight">{title}</h2>
+      {subtitle && <p className="text-[13px] text-muted-foreground leading-relaxed max-w-[65ch]">{subtitle}</p>}
     </div>
   );
 }
@@ -92,39 +93,48 @@ function SnapshotCard({
   const pctInt = Math.round(pct * 100);
   const numColor = pct >= 0.7 ? "text-success" : pct >= 0.5 ? "text-yellow-600" : pct >= 0.3 ? "text-orange-600" : "text-destructive";
   const barColor = pct >= 0.7 ? "bg-success" : pct >= 0.5 ? "bg-yellow-400" : pct >= 0.3 ? "bg-orange-400" : "bg-destructive";
+  const iconBg   = pct >= 0.7 ? "bg-success/10 text-success" : pct >= 0.5 ? "bg-yellow-50 text-yellow-600" : pct >= 0.3 ? "bg-orange-50 text-orange-600" : "bg-destructive/10 text-destructive";
 
   return (
     <button onClick={onClick} className="w-full text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl">
-      <Card className="border-0 shadow-elevated rounded-xl h-full transition-shadow group-hover:shadow-lg group-hover:ring-1 group-hover:ring-primary/20">
-        <CardContent className="p-5 space-y-3.5 flex flex-col h-full">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+      <Card className="border-0 shadow-elevated rounded-xl h-full transition-all duration-200 group-hover:shadow-prominent group-hover:ring-1 group-hover:ring-primary/20 group-hover:-translate-y-0.5">
+        <CardContent className="p-5 sm:p-6 flex flex-col h-full gap-4">
+
+          {/* Header row */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
                 {icon}
               </div>
-              <div>
-                <p className="text-[12px] font-extrabold text-foreground leading-tight">{title}</p>
-                <p className="text-[10px] text-muted-foreground">{subtitle}</p>
+              <div className="min-w-0">
+                <p className="text-[13px] font-extrabold text-foreground leading-tight truncate">{title}</p>
+                <p className="text-[10.5px] text-muted-foreground mt-0.5">{subtitle}</p>
               </div>
             </div>
             {displayValue
-              ? <span className="text-[15px] font-extrabold leading-tight text-success text-right max-w-[110px]">{displayValue}</span>
-              : <span className={`text-[22px] font-extrabold leading-none ${numColor}`}>{pctInt}<span className="text-[11px] font-bold text-muted-foreground">%</span></span>
+              ? <span className="text-[14px] font-extrabold leading-tight text-success text-right max-w-[110px] shrink-0">{displayValue}</span>
+              : <span className={`text-[24px] font-extrabold leading-none shrink-0 ${numColor}`}>
+                  {pctInt}<span className="text-[11px] font-bold text-muted-foreground ml-0.5">%</span>
+                </span>
             }
           </div>
 
-          <div className="h-1.5 bg-muted rounded-full">
-            <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pctInt}%` }} />
+          {/* Progress bar */}
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${barColor} transition-all duration-700`} style={{ width: `${pctInt}%` }} />
           </div>
 
+          {/* Status */}
           <div className="flex items-center justify-between gap-2">
             <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${getSeverityBg(pct)}`}>{status}</span>
             {highlight && <span className="text-[10px] font-bold text-success">{highlight}</span>}
           </div>
 
-          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2 flex-1">{summary}</p>
+          {/* Summary */}
+          <p className="text-[12px] text-muted-foreground leading-relaxed line-clamp-2 flex-1">{summary}</p>
 
-          <p className="text-[10px] text-primary font-semibold flex items-center gap-1 group-hover:underline mt-auto pt-1">
+          {/* CTA */}
+          <p className="text-[10.5px] text-primary font-semibold flex items-center gap-1 group-hover:underline mt-auto">
             View full analysis <ArrowRight className="h-3 w-3" />
           </p>
         </CardContent>
@@ -134,39 +144,50 @@ function SnapshotCard({
 }
 
 function PriorityFixCard({ fix, rank }: { fix: ScanFinding; rank: number }) {
-  const EFFORT: Record<string, string> = { high: "Significant effort required", medium: "Moderate effort", low: "Quick win" };
-  const BADGE: Record<string, string> = {
-    high: "bg-destructive/10 text-destructive border border-destructive/20",
-    medium: "bg-orange-50 text-orange-700 border border-orange-200",
-    low: "bg-yellow-50 text-yellow-700 border border-yellow-200",
+  const EFFORT: Record<string, string> = { high: "Significant effort", medium: "Moderate effort", low: "Quick win" };
+
+  const SEVERITY_BORDER: Record<string, string> = {
+    high:   "border-l-[4px] border-l-[#DC2626]",
+    medium: "border-l-[4px] border-l-[#D97706]",
+    low:    "border-l-[4px] border-l-[#16A34A]",
+  };
+  const RANK_BG: Record<string, string> = {
+    high:   "bg-[#FEF2F2] text-[#DC2626]",
+    medium: "bg-[#FFFBEB] text-[#D97706]",
+    low:    "bg-[#F0FDF4] text-[#16A34A]",
   };
 
   return (
-    <Card className="border-0 shadow-elevated rounded-xl overflow-hidden">
+    <Card className={`border-0 shadow-elevated rounded-xl overflow-hidden ${SEVERITY_BORDER[fix.severity] ?? ""}`}>
       <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary text-[13px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">
+        <div className="flex items-start gap-4">
+          {/* Rank circle — tinted by severity */}
+          <div className={`h-9 w-9 rounded-full text-[14px] font-extrabold flex items-center justify-center shrink-0 mt-0.5 ${RANK_BG[fix.severity] ?? "bg-primary/10 text-primary"}`}>
             {rank}
           </div>
-          <div className="flex-1 min-w-0 space-y-2">
+
+          <div className="flex-1 min-w-0 space-y-2.5">
+            {/* Title row */}
             <div className="flex items-start justify-between gap-3 flex-wrap">
-              <p className="text-[13px] sm:text-[14px] font-bold text-foreground leading-snug flex-1 min-w-0">{fix.label}</p>
-              <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wide shrink-0 ${BADGE[fix.severity] ?? "bg-muted text-muted-foreground"}`}>
-                {fix.severity} priority
-              </span>
+              <p className="text-[14px] font-bold text-foreground leading-snug flex-1 min-w-0">{fix.label}</p>
+              <SeverityBadge severity={fix.severity} />
             </div>
+
+            {/* Description */}
             {fix.description && (
-              <p className="text-[12px] sm:text-[12.5px] text-muted-foreground leading-relaxed">{fix.description}</p>
+              <p className="text-[12.5px] text-muted-foreground leading-relaxed">{fix.description}</p>
             )}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-0.5">
+
+            {/* Meta row */}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-5 pt-0.5">
               {fix.impact && (
                 <div className="flex items-center gap-1.5">
-                  <TrendingUp className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <TrendingUp className="h-3 w-3 text-muted-foreground/70 shrink-0" />
                   <span className="text-[11px] text-muted-foreground">{fix.impact}</span>
                 </div>
               )}
               <div className="flex items-center gap-1.5">
-                <Zap className="h-3 w-3 text-muted-foreground shrink-0" />
+                <Zap className="h-3 w-3 text-muted-foreground/70 shrink-0" />
                 <span className="text-[11px] text-muted-foreground">{EFFORT[fix.severity]}</span>
               </div>
             </div>
@@ -190,41 +211,64 @@ function DiagnosticSection({
   onToggleReviewed?: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const pct = score / max;
+  const pct = Math.min(score / max, 1);
   const numColor = pct >= 0.7 ? "text-success" : pct >= 0.5 ? "text-yellow-600" : pct >= 0.3 ? "text-orange-600" : "text-destructive";
+  const barColor = pct >= 0.7 ? "bg-success" : pct >= 0.5 ? "bg-yellow-400" : pct >= 0.3 ? "bg-orange-400" : "bg-destructive";
   const triggerId = `section-trigger-${sectionId}`;
   const panelId  = `section-panel-${sectionId}`;
 
   return (
     <div ref={sectionRef} className="scroll-mt-[72px]">
-      <Card className={`border-0 shadow-elevated rounded-xl overflow-hidden transition-shadow ${reviewed ? "ring-1 ring-success/30" : ""}`}>
+      <Card className={`border-0 shadow-elevated rounded-xl overflow-hidden transition-all duration-200 ${
+        reviewed ? "ring-1 ring-success/30" : "hover:shadow-prominent"
+      }`}>
         <button
           id={triggerId}
           aria-expanded={expanded}
           aria-controls={panelId}
-          className="w-full flex items-center gap-3 sm:gap-4 p-4 sm:p-5 min-h-[64px] text-left hover:bg-muted/20 active:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+          className="w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 sm:py-5 min-h-[68px] text-left hover:bg-muted/15 active:bg-muted/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
           onClick={() => setExpanded(v => !v)}
         >
-          <div className={`h-9 w-9 sm:h-10 sm:w-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${reviewed ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
-            {reviewed ? <CheckCircle2 className="h-4 w-4" /> : icon}
+          {/* Icon */}
+          <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+            reviewed ? "bg-success/10 text-success" : expanded ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+          }`}>
+            {reviewed ? <CheckCircle2 className="h-4.5 w-4.5" /> : icon}
           </div>
+
+          {/* Title + summary */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[13px] sm:text-[14px] font-extrabold text-foreground">{title}</span>
-              {reviewed && <span className="text-[10px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">Reviewed</span>}
-              <span className="text-[10px] text-muted-foreground hidden sm:inline">{subtitle}</span>
+              <span className="text-[14px] sm:text-[15px] font-extrabold text-foreground">{title}</span>
+              {reviewed && (
+                <span className="text-[10px] font-bold text-success bg-success/10 border border-success/20 px-2 py-0.5 rounded-full">
+                  Reviewed
+                </span>
+              )}
+              <span className="text-[10.5px] text-muted-foreground hidden sm:inline">{subtitle}</span>
             </div>
-            <p className="text-[11.5px] sm:text-[12px] text-muted-foreground mt-0.5 line-clamp-1">{summary}</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5 line-clamp-1 leading-snug">{summary}</p>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="text-right">
-              <span className={`text-[17px] sm:text-[20px] font-extrabold leading-none ${numColor}`}>{Math.round(pct * 100)}%</span>
-              <p className="text-[9px] text-muted-foreground font-medium mt-0.5 whitespace-nowrap hidden sm:block">{status}</p>
+
+          {/* Score + progress + chevron */}
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            <div className="text-right hidden xs:block">
+              <div className="flex items-baseline gap-1 justify-end">
+                <span className={`text-[20px] sm:text-[22px] font-extrabold leading-none ${numColor}`}>
+                  {Math.round(pct * 100)}
+                </span>
+                <span className="text-[11px] text-muted-foreground font-medium">%</span>
+              </div>
+              <div className="mt-1 w-[60px] h-1 bg-muted rounded-full overflow-hidden hidden sm:block">
+                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct * 100}%` }} />
+              </div>
             </div>
-            {expanded
-              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            }
+            <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${expanded ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground"}`}>
+              {expanded
+                ? <ChevronUp className="h-4 w-4" />
+                : <ChevronDown className="h-4 w-4" />
+              }
+            </div>
           </div>
         </button>
 
@@ -238,20 +282,20 @@ function DiagnosticSection({
             <div className="border-t border-border/40">
               {children}
               {/* Mark reviewed footer */}
-              <div className="px-5 py-3 bg-muted/20 border-t border-border/30 flex items-center justify-between">
+              <div className="px-5 py-3.5 bg-secondary/40 border-t border-border/30 flex items-center justify-between gap-4">
                 <span className="text-[11px] text-muted-foreground/60 font-medium">
-                  {reviewed ? "You've marked this section as reviewed" : "Mark when you're done reviewing"}
+                  {reviewed ? "Section marked as reviewed" : "Mark when you're done reviewing"}
                 </span>
                 <button
                   type="button"
                   onClick={() => onToggleReviewed?.(sectionId)}
-                  className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     reviewed
-                      ? "bg-success/10 text-success hover:bg-success/20"
+                      ? "bg-success/10 text-success hover:bg-success/20 border border-success/20"
                       : "bg-muted text-muted-foreground hover:bg-success/10 hover:text-success"
                   }`}
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                   {reviewed ? "Reviewed" : "Mark as Reviewed"}
                 </button>
               </div>
@@ -291,27 +335,39 @@ function StickyReportSidebar({
     <div className="sticky top-[58px] space-y-3">
       {/* Score card */}
       <Card className="border-0 shadow-elevated rounded-xl overflow-hidden">
-        <div className="bg-ihd-dark-green px-5 py-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-primary-foreground/50 mb-2">Authority Score</p>
-          <div className="flex items-end gap-2">
-            <span className="text-[42px] font-extrabold text-primary-foreground leading-none">{score}</span>
-            <span className="text-[16px] text-primary-foreground/50 font-bold mb-1">/100</span>
+        {/* Score header — dark premium treatment */}
+        <div className="bg-[#1E2321] px-5 py-5">
+          <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-white/40 mb-3">Authority Score</p>
+          <div className="flex items-end gap-2 mb-3">
+            <span className="text-[46px] font-extrabold text-white leading-none">{score}</span>
+            <span className="text-[16px] text-white/35 font-bold mb-1.5">/100</span>
           </div>
-          <span className={`inline-flex items-center gap-1.5 mt-2 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wide ${risk.bgColor} ${risk.textColor}`}>
-            <RiskIcon className="h-3 w-3" />
+          {/* Mini score bar */}
+          <div className="h-1 bg-white/10 rounded-full overflow-hidden mb-3">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${
+                score >= 70 ? "bg-[#4ADE80]" : score >= 50 ? "bg-[#FBBF24]" : score >= 30 ? "bg-[#FB923C]" : "bg-[#F87171]"
+              }`}
+              style={{ width: `${score}%` }}
+            />
+          </div>
+          <span className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wide ${risk.bgColor} ${risk.textColor}`}>
+            <RiskIcon className="h-3 w-3 shrink-0" />
             {risk.label}
           </span>
         </div>
-        <CardContent className="p-4 space-y-4">
+
+        <CardContent className="p-4 space-y-3.5">
           <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", url)} className="block">
-            <Button className="w-full gap-2 text-[12px] font-bold rounded-lg h-11">
+            <Button className="w-full gap-2 text-[12px] font-bold rounded-lg h-11 shadow-sm">
               Book Strategy Call <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
           <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed -mt-1">
             Free 30-min review · No obligation
           </p>
-          <div className="border-t border-border/40 pt-3 space-y-1">
+
+          <div className="border-t border-border/40 pt-3 space-y-1.5">
             <Button
               variant="ghost" size="sm"
               className="w-full gap-2 text-[11px] text-muted-foreground hover:text-foreground h-8 rounded-lg"
@@ -321,9 +377,11 @@ function StickyReportSidebar({
               {exporting ? "Exporting…" : "Download PDF"}
             </Button>
             {actionPlanCount > 0 && (
-              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-primary/5">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/8 border border-primary/15">
                 <Bookmark className="h-3 w-3 text-primary shrink-0" />
-                <span className="text-[11px] text-primary font-semibold">{actionPlanCount} item{actionPlanCount !== 1 ? "s" : ""} in action plan</span>
+                <span className="text-[11px] text-primary font-semibold">
+                  {actionPlanCount} item{actionPlanCount !== 1 ? "s" : ""} in action plan
+                </span>
               </div>
             )}
           </div>
@@ -331,9 +389,9 @@ function StickyReportSidebar({
       </Card>
 
       {/* Section nav */}
-      <Card className="border-0 shadow-sm rounded-xl overflow-hidden">
+      <Card className="border-0 shadow-card rounded-xl overflow-hidden">
         <CardContent className="p-3">
-          <p className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground px-2 mb-2">Jump to Section</p>
+          <p className="text-[10px] uppercase tracking-[0.16em] font-extrabold text-muted-foreground/70 px-2 mb-2.5">Jump to Section</p>
           <nav aria-label="Report sections">
             {SIDEBAR_SECTIONS.map(({ id, label }) => {
               const isActive = activeSection === id;
@@ -341,7 +399,7 @@ function StickyReportSidebar({
                 <button
                   key={id}
                   onClick={scrollTo[id]}
-                  className={`w-full text-left flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                  className={`w-full text-left flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                     isActive
                       ? "bg-primary/10 text-primary font-bold"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -864,11 +922,11 @@ const ResultsPage = () => {
                 </span>
               </div>
 
-              <h1 className="text-[20px] sm:text-[24px] lg:text-[28px] font-extrabold text-foreground leading-[1.25]">
+              <h1 className="text-[22px] sm:text-[26px] lg:text-[30px] font-extrabold text-foreground leading-[1.22] tracking-tight">
                 {getDiagnosis(scores.authority_gap_score, input.clinic_type)}
               </h1>
 
-              <p className="text-[13px] text-muted-foreground/80 leading-relaxed max-w-[56ch] lg:max-w-none">
+              <p className="text-[13.5px] text-muted-foreground/80 leading-[1.75] max-w-[56ch] lg:max-w-none">
                 Your authority score of{" "}
                 <strong className="text-foreground font-bold">{scores.authority_gap_score}/100</strong>{" "}
                 {getScoreContext(scores.authority_gap_score)}
@@ -927,14 +985,25 @@ const ResultsPage = () => {
                   <p className="text-[10px] text-muted-foreground mt-0.5 lg:text-center">Out of 100 possible points</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="text-center p-2.5 rounded-lg bg-muted/50">
-                    <p className="text-[15px] font-extrabold text-foreground">{scores.visibility_score}<span className="text-[10px] text-muted-foreground font-normal">/40</span></p>
-                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Visibility</p>
-                  </div>
-                  <div className="text-center p-2.5 rounded-lg bg-muted/50">
-                    <p className="text-[15px] font-extrabold text-foreground">{scores.conversion_score}<span className="text-[10px] text-muted-foreground font-normal">/40</span></p>
-                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Conversion</p>
-                  </div>
+                  {[
+                    { label: "Visibility", score: scores.visibility_score, max: 40 },
+                    { label: "Conversion", score: scores.conversion_score, max: 40 },
+                  ].map(({ label, score: s, max }) => {
+                    const p = s / max;
+                    const color = p >= 0.7 ? "text-success" : p >= 0.5 ? "text-yellow-600" : p >= 0.3 ? "text-orange-600" : "text-destructive";
+                    const bar = p >= 0.7 ? "bg-success" : p >= 0.5 ? "bg-yellow-400" : p >= 0.3 ? "bg-orange-400" : "bg-destructive";
+                    return (
+                      <div key={label} className="text-center p-3 rounded-xl bg-muted/40 border border-border/40 space-y-1.5">
+                        <p className={`text-[16px] font-extrabold leading-none ${color}`}>
+                          {s}<span className="text-[9px] text-muted-foreground font-normal">/{max}</span>
+                        </p>
+                        <div className="h-1 bg-border/60 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${bar}`} style={{ width: `${p * 100}%` }} />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground font-medium">{label}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1204,10 +1273,10 @@ const ResultsPage = () => {
         </motion.section>
 
         {/* Methodology */}
-        <Card className="border-0 shadow-sm rounded-xl border-l-4 border-l-muted-foreground/15">
-          <CardContent className="p-5">
-            <p className="text-[11px] text-muted-foreground/70 leading-[1.7]">
-              <strong className="text-foreground/80 font-bold">Methodology: </strong>
+        <Card className="border-0 shadow-card rounded-xl border-l-[3px] border-l-border bg-secondary/30">
+          <CardContent className="p-4 sm:p-5">
+            <p className="text-[11px] text-muted-foreground/65 leading-[1.75]">
+              <strong className="text-foreground/70 font-bold uppercase tracking-wide text-[10px]">Methodology · </strong>
               {methodology || `Revenue opportunity ranges are based on live analysis of site structure, estimated local search demand, click-share benchmarks, and assumed conversion rates for ${input.clinic_type.toLowerCase()} practices. These figures represent modeled opportunity ranges and are not audited financial projections.`}
             </p>
           </CardContent>
@@ -1220,9 +1289,9 @@ const ResultsPage = () => {
           className="scroll-mt-[72px]"
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
         >
-          <Card className="shadow-elevated border-0 rounded-xl overflow-hidden">
+          <Card className="shadow-prominent border-0 rounded-xl overflow-hidden">
             {/* Top accent bar */}
-            <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
+            <div className="h-[3px] bg-gradient-to-r from-primary via-primary/80 to-primary/20" />
             <CardContent className="p-6 sm:p-8 space-y-7">
 
               {/* Header */}

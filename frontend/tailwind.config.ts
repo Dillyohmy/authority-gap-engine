@@ -100,6 +100,7 @@ export default {
       boxShadow: {
         card: "var(--shadow-card)",
         elevated: "var(--shadow-elevated)",
+        prominent: "var(--shadow-prominent)",
       },
       keyframes: {
         "accordion-down": {
