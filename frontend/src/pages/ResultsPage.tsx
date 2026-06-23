@@ -228,6 +228,77 @@ function DiagnosticSection({
   );
 }
 
+function StickyReportSidebar({
+  score, risk, topFix, url, onExport, exporting,
+}: {
+  score: number;
+  risk: ReturnType<typeof getRiskLevel>;
+  topFix?: ScanFinding;
+  url: string;
+  onExport: () => void;
+  exporting: boolean;
+}) {
+  const RiskIcon = risk.Icon;
+  return (
+    <div className="sticky top-[64px] space-y-3">
+      <Card className="border-0 shadow-elevated rounded-xl overflow-hidden">
+        <div className="bg-ihd-dark-green px-5 py-4">
+          <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-primary-foreground/50 mb-2">Authority Score</p>
+          <div className="flex items-end gap-2">
+            <span className="text-[42px] font-extrabold text-primary-foreground leading-none">{score}</span>
+            <span className="text-[16px] text-primary-foreground/50 font-bold mb-1">/100</span>
+          </div>
+          <span className={`inline-flex items-center gap-1.5 mt-2 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wide ${risk.bgColor} ${risk.textColor}`}>
+            <RiskIcon className="h-3 w-3" />
+            {risk.label}
+          </span>
+        </div>
+        <CardContent className="p-4 space-y-4">
+          {topFix && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground">Top Priority</p>
+              <div className={`text-[9px] font-bold px-2 py-0.5 rounded-full w-fit ${RISK_BADGE[topFix.severity] ?? "bg-muted text-muted-foreground"}`}>
+                {topFix.severity.toUpperCase()} PRIORITY
+              </div>
+              <p className="text-[12px] font-semibold text-foreground leading-snug">{topFix.label}</p>
+            </div>
+          )}
+          <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", url)} className="block">
+            <Button className="w-full gap-2 text-[12px] font-bold rounded-lg h-10">
+              Book Strategy Call <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+          <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed">
+            Free 30-min review of your top findings
+          </p>
+          <div className="border-t border-border/40 pt-3">
+            <Button
+              variant="ghost" size="sm"
+              className="w-full gap-2 text-[11px] text-muted-foreground hover:text-foreground h-8 rounded-lg"
+              onClick={onExport} disabled={exporting}
+            >
+              {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+              {exporting ? "Exporting…" : "Download PDF Report"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-0 shadow-sm rounded-xl overflow-hidden">
+        <CardContent className="p-4 space-y-2">
+          <p className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground">What's in this report</p>
+          {["Visibility & search analysis", "Conversion friction audit", "Revenue opportunity model", "Priority actions ranked by impact"].map((item) => (
+            <div key={item} className="flex items-center gap-2">
+              <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
+              <span className="text-[11px] text-foreground/70 font-medium">{item}</span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 /** Preview Mode badge — shown only in mock mode */
 function PreviewBadge() {
   return (
@@ -268,6 +339,8 @@ const ResultsPage = () => {
   const [exporting, setExporting] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   // Fetch report — from backend by jobId, or from Supabase by scanId (dashboard revisit)
   useEffect(() => {
@@ -386,6 +459,16 @@ const ResultsPage = () => {
       if (!unlocked && report) trackEvent("abandoned", report.input.website_url);
     };
   }, [unlocked, report]);
+
+  // Show sticky mobile bar once hero scrolls out of view
+  useEffect(() => {
+    if (!unlocked) return;
+    const el = heroRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => setShowStickyBar(!entry.isIntersecting), { threshold: 0.15 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [unlocked]);
 
   const handleLeadSubmit = async (data: LeadData) => {
     if (!report) return;
@@ -606,6 +689,7 @@ const ResultsPage = () => {
 
       {/* ── 2. HERO DIAGNOSTIC SUMMARY ────────────────────────────────────────── */}
       <motion.section
+        ref={heroRef}
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="bg-card border-b border-border/40"
       >
@@ -654,19 +738,22 @@ const ResultsPage = () => {
               )}
 
               {/* CTAs */}
-              <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex flex-col gap-3 pt-2 sm:max-w-md">
                 <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
-                  <Button size="lg" className="gap-2 text-[13px] rounded-lg px-7 h-11 font-bold">
-                    Book Strategy Review <ArrowRight className="h-4 w-4" />
+                  <Button size="lg" className="w-full gap-2 text-[14px] rounded-lg px-7 h-12 font-bold shadow-md">
+                    Book My Strategy Call <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
+                <p className="text-[11px] text-muted-foreground/60 text-center sm:text-left">
+                  Free 30-min session · We walk through your top findings together
+                </p>
                 <Button
                   variant="outline" size="lg"
-                  className="border-border text-foreground gap-2 text-[13px] rounded-lg px-6 h-11 font-bold"
+                  className="border-border text-foreground gap-2 text-[13px] rounded-lg px-6 h-10 font-semibold"
                   onClick={handleExportPdf} disabled={exporting}
                 >
                   {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  Download PDF
+                  Download Full Report PDF
                 </Button>
               </div>
             </div>
@@ -693,7 +780,9 @@ const ResultsPage = () => {
         </div>
       </motion.section>
 
-      <div className="container max-w-6xl px-4 py-7 sm:py-8 space-y-8 sm:space-y-10">
+      <div className="container max-w-6xl px-4 py-7 sm:py-8 pb-[84px] lg:pb-8">
+        <div className="grid lg:grid-cols-[1fr_268px] gap-8 items-start">
+        <div className="space-y-8 sm:space-y-10 min-w-0">
 
         {/* ── 3. EXECUTIVE SNAPSHOT ───────────────────────────────────────────── */}
         <motion.section
@@ -754,6 +843,24 @@ const ResultsPage = () => {
             </div>
           </motion.section>
         )}
+
+        {/* ── Mid-page contextual CTA ─────────────────────────────────────────── */}
+        <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/[0.05] via-primary/[0.03] to-transparent p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          <div className="flex-1 space-y-1">
+            <p className="text-[15px] font-extrabold text-foreground leading-snug">Want help fixing these issues?</p>
+            <p className="text-[12px] text-muted-foreground leading-relaxed">
+              Let's turn this diagnostic into a clear, prioritized action plan for your practice.
+            </p>
+          </div>
+          <div className="flex flex-col items-start sm:items-end gap-1.5 shrink-0">
+            <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
+              <Button className="gap-2 text-[13px] font-bold rounded-lg h-10 px-5">
+                Get My Action Plan <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+            <p className="text-[10px] text-muted-foreground/60 font-medium">Free · No commitment required</p>
+          </div>
+        </div>
 
         {/* ── 5. DETAILED DIAGNOSTIC SECTIONS ─────────────────────────────────── */}
         <motion.section
@@ -864,58 +971,109 @@ const ResultsPage = () => {
         <motion.section
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
         >
-          <Card className="shadow-elevated border-0 rounded-xl border-t-4 border-t-primary overflow-hidden">
-            <CardContent className="py-10 sm:py-12 text-center space-y-6 px-5 sm:px-8">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="h-6 w-6 text-primary" />
-              </div>
+          <Card className="shadow-elevated border-0 rounded-xl overflow-hidden">
+            {/* Top accent bar */}
+            <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
+            <CardContent className="p-6 sm:p-8 space-y-7">
+
+              {/* Header */}
               <div className="space-y-2">
-                <h3 className="text-[18px] sm:text-[20px] font-extrabold text-foreground leading-tight">
-                  Ready to Close These Gaps?
+                <p className="text-[10px] uppercase tracking-[0.2em] font-extrabold text-muted-foreground">Your Next Move</p>
+                <h3 className="text-[20px] sm:text-[24px] font-extrabold text-foreground leading-tight">
+                  The gaps are clear. The path forward is too.
                 </h3>
-                <p className="text-[13px] text-muted-foreground/70 max-w-lg mx-auto leading-[1.7]">
-                  Your diagnostic is complete. The path forward is clear — get a personalized strategy to act on these findings.
+                <p className="text-[13px] text-muted-foreground/80 leading-[1.7] max-w-2xl">
+                  Your {input.clinic_type} practice is currently operating at a{" "}
+                  <strong className="text-foreground font-bold">{risk.label.toLowerCase()}</strong> level with an authority score of{" "}
+                  <strong className="text-foreground font-bold">{scores.authority_gap_score}/100</strong>. Addressing the top identified gaps could unlock an estimated{" "}
+                  <strong className="text-foreground font-bold">${estimated_revenue_low.toLocaleString()}–${estimated_revenue_high.toLocaleString()}/mo</strong> in additional patient revenue.
                 </p>
               </div>
 
-              {/* Improvement roadmap */}
-              <div className="grid sm:grid-cols-3 gap-3 text-left max-w-2xl mx-auto">
-                {[
-                  "Review your top priority fixes above",
-                  "Book a strategy session to build your action plan",
-                  "Track improvement with monthly diagnostics",
-                ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-muted/50">
-                    <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-[11px] font-extrabold flex items-center justify-center shrink-0">
-                      {i + 1}
-                    </span>
-                    <p className="text-[12px] font-medium text-foreground leading-snug">{step}</p>
-                  </div>
-                ))}
+              {/* What you get */}
+              <div className="rounded-xl bg-muted/40 border border-border/50 p-5 space-y-3">
+                <p className="text-[11px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground">What a strategy session includes</p>
+                <div className="grid sm:grid-cols-2 gap-2.5">
+                  {[
+                    "Walk through your top 3 priority fixes",
+                    "Identify which gaps to address first",
+                    "Estimate ROI for each improvement",
+                    "Build a 90-day action timeline",
+                  ].map((item) => (
+                    <div key={item} className="flex items-start gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-[12px] text-foreground/80 font-medium leading-snug">{item}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
-                  <Button size="lg" className="gap-2 text-[13px] rounded-lg px-6 h-12 font-bold">
-                    Book Strategy Review <ArrowRight className="h-4 w-4" />
+                  <Button size="lg" className="gap-2 text-[14px] rounded-lg px-8 h-12 font-bold shadow-md w-full sm:w-auto">
+                    Book My Strategy Call <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Button
                   variant="outline" size="lg"
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground gap-2 text-[13px] rounded-lg px-6 h-12 font-bold"
+                  className="border-border text-foreground gap-2 text-[13px] rounded-lg px-6 h-12 font-semibold w-full sm:w-auto"
                   onClick={handleExportPdf} disabled={exporting}
                 >
                   {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  {exporting ? "Exporting…" : "Download PDF"}
+                  {exporting ? "Exporting…" : "Download Full Report"}
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground/50 font-medium">
-                Understand exactly where your practice can improve patient acquisition
+              <p className="text-[11px] text-muted-foreground/50 font-medium -mt-3">
+                Free · 30 minutes · No obligation to continue
               </p>
+
             </CardContent>
           </Card>
         </motion.section>
-      </div>
+
+        </div>{/* end main column */}
+
+        {/* ── DESKTOP STICKY SIDEBAR ───────────────────────────────────────────── */}
+        <div className="hidden lg:block">
+          <StickyReportSidebar
+            score={scores.authority_gap_score}
+            risk={risk}
+            topFix={top_fixes[0]}
+            url={input.website_url}
+            onExport={handleExportPdf}
+            exporting={exporting}
+          />
+        </div>
+
+        </div>{/* end grid */}
+      </div>{/* end container */}
+
+      {/* ── MOBILE STICKY BOTTOM BAR ─────────────────────────────────────────── */}
+      {showStickyBar && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+          <div className="bg-ihd-nav/96 backdrop-blur-md border-t border-white/10 shadow-lg px-4 py-3 safe-area-inset-bottom">
+            <div className="flex items-center gap-3 max-w-lg mx-auto">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-primary-foreground/55 uppercase tracking-wider font-bold leading-none mb-0.5">
+                  Authority Score
+                </p>
+                <p className="text-[14px] font-extrabold text-primary-foreground leading-none truncate">
+                  {scores.authority_gap_score}/100 · {risk.label}
+                </p>
+              </div>
+              <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
+                <Button
+                  size="sm"
+                  className="gap-1.5 text-[12px] font-bold h-9 px-4 rounded-lg bg-primary-foreground text-primary hover:bg-primary-foreground/90 shrink-0"
+                >
+                  Book Strategy Call <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
