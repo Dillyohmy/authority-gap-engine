@@ -26,8 +26,10 @@ export function calculateOpportunity(
   monthlyPatientValue?: number,
   monthlyTraffic?: number
 ): OpportunityResult {
-  // Defaults based on clinic type
-  const avgPatientValue = monthlyPatientValue || getDefaultPatientValue(clinicType);
+  // Defaults based on clinic type — cap patient value at $1,500/mo to prevent
+  // inflated projections when users enter annual figures or outlier values
+  const rawPatientValue = monthlyPatientValue || getDefaultPatientValue(clinicType);
+  const avgPatientValue = Math.min(rawPatientValue, 1500);
   const estimatedSearchVolume = monthlyTraffic || getEstimatedSearchVolume(clinicType);
 
   // Current capture rate derived from visibility score
@@ -64,8 +66,8 @@ export function calculateOpportunity(
   ];
 
   return {
-    estimated_revenue_low: Math.max(5000, estimated_revenue_low),
-    estimated_revenue_high: Math.max(15000, estimated_revenue_high),
+    estimated_revenue_low: Math.min(Math.max(5000, estimated_revenue_low), 150000),
+    estimated_revenue_high: Math.min(Math.max(15000, estimated_revenue_high), 300000),
     findings,
     model_inputs: [
       `Local search volume: ${estimatedSearchVolume.toLocaleString()}/mo (estimated)`,
