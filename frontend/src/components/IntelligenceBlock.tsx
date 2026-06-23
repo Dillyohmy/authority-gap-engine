@@ -53,7 +53,7 @@ const IntelligenceBlock = ({
   const pct = Math.min(section.score / section.maxScore, 1);
   const barColor = pct >= 0.7 ? "bg-success" : pct >= 0.4 ? "bg-warning" : "bg-destructive";
 
-  const [openFindingId, setOpenFindingId] = useState<string | null>(null);
+  const [openFindingIds, setOpenFindingIds] = useState<Set<string>>(new Set());
   const [justAdded, setJustAdded] = useState<string | null>(null);
   const justAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -79,7 +79,11 @@ const IntelligenceBlock = ({
   const hiddenCount = section.findings.length - poolFindings.length;
 
   const toggleFinding = (id: string) =>
-    setOpenFindingId(prev => (prev === id ? null : id));
+    setOpenFindingIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
 
   return (
     <div className="divide-y divide-border/50">
@@ -151,7 +155,7 @@ const IntelligenceBlock = ({
         {filteredFindings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="list">
             {filteredFindings.map((f, idx) => {
-              const isOpen = openFindingId === f.id;
+              const isOpen = openFindingIds.has(f.id);
               const inPlan = actionPlanItems?.has(f.id) ?? false;
               const isFlash = justAdded === f.id;
               const triggerId = `finding-trigger-${f.id}`;
