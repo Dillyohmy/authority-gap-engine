@@ -712,11 +712,11 @@ const ResultsPage = () => {
                 </span>
               </div>
 
-              <h1 className="text-[20px] sm:text-[24px] lg:text-[28px] font-extrabold text-foreground leading-[1.25] max-w-[22ch]">
+              <h1 className="text-[20px] sm:text-[24px] lg:text-[28px] font-extrabold text-foreground leading-[1.25]">
                 {getDiagnosis(scores.authority_gap_score, input.clinic_type)}
               </h1>
 
-              <p className="text-[13px] text-muted-foreground/80 leading-relaxed max-w-[56ch]">
+              <p className="text-[13px] text-muted-foreground/80 leading-relaxed max-w-[56ch] lg:max-w-none">
                 Your authority score of{" "}
                 <strong className="text-foreground font-bold">{scores.authority_gap_score}/100</strong>{" "}
                 {getScoreContext(scores.authority_gap_score)}
