@@ -7,7 +7,7 @@ import {
   Download, Loader2, CheckCircle2, ChevronDown, ChevronUp,
   AlertTriangle, AlertCircle, Zap, Bookmark, BookmarkCheck, SlidersHorizontal, X,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -473,6 +473,18 @@ const ResultsPage = () => {
   const overviewRef = useRef<HTMLDivElement>(null);
   const prioritiesRef = useRef<HTMLDivElement>(null);
   const finalCtaRef = useRef<HTMLDivElement>(null);
+
+  const rm = useReducedMotion();
+
+  // Shared reveal props for scroll-triggered sections (skipped when prefers-reduced-motion)
+  const reveal = rm
+    ? {}
+    : {
+        initial: { opacity: 0, y: 10 },
+        whileInView: { opacity: 1, y: 0 } as Record<string, unknown>,
+        viewport: { once: true, margin: "0px 0px -6% 0px" },
+        transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as number[] },
+      };
 
   // Fetch report — from backend by jobId, or from Supabase by scanId (dashboard revisit)
   useEffect(() => {
@@ -954,7 +966,7 @@ const ResultsPage = () => {
               {/* CTAs */}
               <div className="flex flex-col gap-2.5 pt-1">
                 <Link to="/strategy-call" className="block" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
-                  <Button size="lg" className="w-full sm:w-auto gap-2 text-[14px] rounded-lg px-7 h-12 font-bold shadow-md">
+                  <Button size="lg" className="w-full sm:w-auto gap-2 text-[14px] rounded-lg px-7 h-12 font-bold shadow-md active:scale-[0.97] transition-transform">
                     Book My Strategy Call <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
@@ -1040,7 +1052,7 @@ const ResultsPage = () => {
           ref={overviewRef}
           id="section-overview"
           className="scroll-mt-[72px]"
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+          {...reveal}
         >
           <SectionHeading
             title="Diagnostic Overview"
@@ -1048,40 +1060,70 @@ const ResultsPage = () => {
           />
           {/* 1-col on phone · 2-col on sm tablet · 3-col on lg desktop */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-4">
-            <SnapshotCard
-              title="Visibility Gap"
-              subtitle="Search Authority"
-              score={scores.visibility_score}
-              max={40}
-              icon={<Search className="h-4 w-4" />}
-              summary={visibility.summary}
-              status={getStatusLabel(scores.visibility_score, 40)}
-              onClick={() => visibilityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            />
-            <SnapshotCard
-              title="Conversion Gap"
-              subtitle="Patient Acquisition"
-              score={scores.conversion_score}
-              max={40}
-              icon={<MousePointerClick className="h-4 w-4" />}
-              summary={conversion.summary}
-              status={getStatusLabel(scores.conversion_score, 40)}
-              onClick={() => conversionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            />
-            {/* On sm tablet: spans both columns so the revenue card gets full width below the pair */}
-            <div className="sm:col-span-2 lg:col-span-1">
-              <SnapshotCard
-                title="Growth Potential"
-                subtitle="Revenue Opportunity"
-                score={scores.opportunity_score}
-                max={scores.opportunity_score > 20 ? 100 : 20}
-                icon={<TrendingUp className="h-4 w-4" />}
-                summary={opportunity.summary}
-                status={getStatusLabel(scores.opportunity_score, scores.opportunity_score > 20 ? 100 : 20)}
-                onClick={() => opportunityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                displayValue={`$${estimated_revenue_low.toLocaleString()}–$${estimated_revenue_high.toLocaleString()}/mo`}
-              />
-            </div>
+            {[
+              {
+                delay: 0,
+                className: "",
+                card: (
+                  <SnapshotCard
+                    title="Visibility Gap"
+                    subtitle="Search Authority"
+                    score={scores.visibility_score}
+                    max={40}
+                    icon={<Search className="h-4 w-4" />}
+                    summary={visibility.summary}
+                    status={getStatusLabel(scores.visibility_score, 40)}
+                    onClick={() => visibilityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  />
+                ),
+              },
+              {
+                delay: 0.07,
+                className: "",
+                card: (
+                  <SnapshotCard
+                    title="Conversion Gap"
+                    subtitle="Patient Acquisition"
+                    score={scores.conversion_score}
+                    max={40}
+                    icon={<MousePointerClick className="h-4 w-4" />}
+                    summary={conversion.summary}
+                    status={getStatusLabel(scores.conversion_score, 40)}
+                    onClick={() => conversionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  />
+                ),
+              },
+              {
+                delay: 0.14,
+                className: "sm:col-span-2 lg:col-span-1",
+                card: (
+                  <SnapshotCard
+                    title="Growth Potential"
+                    subtitle="Revenue Opportunity"
+                    score={scores.opportunity_score}
+                    max={scores.opportunity_score > 20 ? 100 : 20}
+                    icon={<TrendingUp className="h-4 w-4" />}
+                    summary={opportunity.summary}
+                    status={getStatusLabel(scores.opportunity_score, scores.opportunity_score > 20 ? 100 : 20)}
+                    onClick={() => opportunityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                    displayValue={`$${estimated_revenue_low.toLocaleString()}–$${estimated_revenue_high.toLocaleString()}/mo`}
+                  />
+                ),
+              },
+            ].map(({ delay, className, card }, i) => (
+              <motion.div
+                key={i}
+                className={className}
+                {...(rm ? {} : {
+                  initial: { opacity: 0, y: 10 },
+                  whileInView: { opacity: 1, y: 0 },
+                  viewport: { once: true, margin: "0px 0px -4% 0px" },
+                  transition: { duration: 0.35, delay, ease: [0.16, 1, 0.3, 1] as number[] },
+                })}
+              >
+                {card}
+              </motion.div>
+            ))}
           </div>
         </motion.section>
 
@@ -1091,7 +1133,7 @@ const ResultsPage = () => {
             ref={prioritiesRef}
             id="section-priorities"
             className="scroll-mt-[72px]"
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+            {...reveal}
           >
             <SectionHeading
               title="Priority Fixes"
@@ -1099,7 +1141,17 @@ const ResultsPage = () => {
             />
             <div className="space-y-3 mt-4">
               {top_fixes.map((fix, i) => (
-                <PriorityFixCard key={fix.id ?? i} fix={fix} rank={i + 1} />
+                <motion.div
+                  key={fix.id ?? i}
+                  {...(rm ? {} : {
+                    initial: { opacity: 0, x: -6 },
+                    whileInView: { opacity: 1, x: 0 },
+                    viewport: { once: true, margin: "0px 0px -4% 0px" },
+                    transition: { duration: 0.3, delay: i * 0.06, ease: "easeOut" },
+                  })}
+                >
+                  <PriorityFixCard fix={fix} rank={i + 1} />
+                </motion.div>
               ))}
             </div>
           </motion.section>
@@ -1115,7 +1167,7 @@ const ResultsPage = () => {
           </div>
           <div className="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto shrink-0">
             <Link to="/strategy-call" className="block w-full sm:w-auto" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
-              <Button className="w-full sm:w-auto gap-2 text-[13px] font-bold rounded-lg h-11 px-5">
+              <Button className="w-full sm:w-auto gap-2 text-[13px] font-bold rounded-lg h-11 px-5 active:scale-[0.97] transition-transform">
                 Get My Action Plan <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
@@ -1124,9 +1176,7 @@ const ResultsPage = () => {
         </div>
 
         {/* ── 5. DETAILED DIAGNOSTIC SECTIONS ─────────────────────────────────── */}
-        <motion.section
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-        >
+        <motion.section {...reveal}>
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-0 sm:justify-between mb-4">
             <SectionHeading
               title="Full Diagnostic"
@@ -1287,7 +1337,7 @@ const ResultsPage = () => {
           ref={finalCtaRef}
           id="section-action"
           className="scroll-mt-[72px]"
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+          {...reveal}
         >
           <Card className="shadow-prominent border-0 rounded-xl overflow-hidden">
             {/* Top accent bar */}
@@ -1329,7 +1379,7 @@ const ResultsPage = () => {
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <Link to="/strategy-call" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
-                  <Button size="lg" className="gap-2 text-[14px] rounded-lg px-8 h-12 font-bold shadow-md w-full sm:w-auto">
+                  <Button size="lg" className="gap-2 text-[14px] rounded-lg px-8 h-12 font-bold shadow-md w-full sm:w-auto active:scale-[0.97] transition-transform">
                     Book My Strategy Call <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
@@ -1371,36 +1421,47 @@ const ResultsPage = () => {
       </div>{/* end container */}
 
       {/* ── MOBILE STICKY BOTTOM BAR ─────────────────────────────────────────── */}
-      {showStickyBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-          <div
-            className="bg-ihd-nav/97 backdrop-blur-md border-t border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.18)] px-4 pt-3"
-            style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }}
+      <AnimatePresence>
+        {showStickyBar && (
+          <motion.div
+            initial={rm ? { opacity: 0 } : { y: "100%" }}
+            animate={rm ? { opacity: 1 } : { y: 0 }}
+            exit={rm ? { opacity: 0 } : { y: "100%" }}
+            transition={rm
+              ? { duration: 0.15 }
+              : { type: "spring", damping: 28, stiffness: 280, mass: 0.8 }
+            }
+            className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
           >
-            <div className="flex items-center gap-3 max-w-lg mx-auto">
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-primary-foreground/50 uppercase tracking-[0.14em] font-bold leading-none mb-1">
-                  Authority Score
-                </p>
-                <p className="text-[15px] font-extrabold text-primary-foreground leading-none truncate">
-                  {scores.authority_gap_score}<span className="text-primary-foreground/50 font-semibold text-[12px]">/100</span>
-                  <span className={`ml-2 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${risk.bgColor} ${risk.textColor}`}>
-                    {risk.label}
-                  </span>
-                </p>
+            <div
+              className="bg-ihd-nav/97 backdrop-blur-md border-t border-white/10 shadow-[0_-4px_24px_rgba(0,0,0,0.18)] px-4 pt-3"
+              style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))' }}
+            >
+              <div className="flex items-center gap-3 max-w-lg mx-auto">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-primary-foreground/50 uppercase tracking-[0.14em] font-bold leading-none mb-1">
+                    Authority Score
+                  </p>
+                  <p className="text-[15px] font-extrabold text-primary-foreground leading-none truncate">
+                    {scores.authority_gap_score}<span className="text-primary-foreground/50 font-semibold text-[12px]">/100</span>
+                    <span className={`ml-2 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${risk.bgColor} ${risk.textColor}`}>
+                      {risk.label}
+                    </span>
+                  </p>
+                </div>
+                <Link to="/strategy-call" className="shrink-0" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 text-[12px] font-bold h-11 px-4 rounded-lg bg-primary-foreground text-primary hover:bg-primary-foreground/90 active:scale-[0.97] transition-transform"
+                  >
+                    Book Strategy Call <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
               </div>
-              <Link to="/strategy-call" className="shrink-0" onClick={() => trackEvent("strategy_clicked", input.website_url)}>
-                <Button
-                  size="sm"
-                  className="gap-1.5 text-[12px] font-bold h-11 px-4 rounded-lg bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-                >
-                  Book Strategy Call <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle, ArrowRight, Brain, Crosshair, Layers, Info, ChevronRight,
   ChevronDown, ChevronUp, Bookmark, BookmarkCheck, TrendingUp,
@@ -54,6 +54,22 @@ const IntelligenceBlock = ({
   const barColor = pct >= 0.7 ? "bg-success" : pct >= 0.4 ? "bg-warning" : "bg-destructive";
 
   const [openFindingId, setOpenFindingId] = useState<string | null>(null);
+  const [justAdded, setJustAdded] = useState<string | null>(null);
+  const justAddedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (justAddedTimerRef.current !== null) clearTimeout(justAddedTimerRef.current);
+  }, []);
+
+  const handleTogglePlan = (id: string) => {
+    const isCurrentlyIn = actionPlanItems?.has(id) ?? false;
+    onToggleActionPlan?.(id);
+    if (!isCurrentlyIn) {
+      if (justAddedTimerRef.current !== null) clearTimeout(justAddedTimerRef.current);
+      setJustAdded(id);
+      justAddedTimerRef.current = setTimeout(() => setJustAdded(null), 1600);
+    }
+  };
 
   const poolFindings = showAll ? section.findings : section.findings.slice(0, 6);
   const filteredFindings =
@@ -137,6 +153,7 @@ const IntelligenceBlock = ({
             {filteredFindings.map((f, idx) => {
               const isOpen = openFindingId === f.id;
               const inPlan = actionPlanItems?.has(f.id) ?? false;
+              const isFlash = justAdded === f.id;
               const triggerId = `finding-trigger-${f.id}`;
               const panelId = `finding-panel-${f.id}`;
               const accentClass = FINDING_ACCENT[f.severity] ?? "";
@@ -145,11 +162,11 @@ const IntelligenceBlock = ({
                 <div
                   key={f.id}
                   role="listitem"
-                  className={`rounded-xl border bg-card overflow-hidden transition-all ${accentClass} ${
+                  className={`rounded-xl border bg-card overflow-hidden transition-all duration-200 ${accentClass} ${
                     isOpen
                       ? "shadow-md ring-1 ring-primary/10"
                       : "shadow-sm hover:shadow-md hover:border-border/80"
-                  }`}
+                  } ${isFlash ? "ring-1 ring-primary/25" : ""}`}
                 >
                   {/* ── Collapsed trigger ── */}
                   <button
@@ -183,14 +200,16 @@ const IntelligenceBlock = ({
                       <button
                         type="button"
                         aria-label={inPlan ? "Remove from action plan" : "Add to action plan"}
-                        onClick={(e) => { e.stopPropagation(); onToggleActionPlan?.(f.id); }}
-                        className={`h-7 w-7 rounded-lg flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                          inPlan
+                        onClick={(e) => { e.stopPropagation(); handleTogglePlan(f.id); }}
+                        className={`h-7 w-7 rounded-lg flex items-center justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                          isFlash
+                            ? "bg-primary/20 text-primary scale-125"
+                            : inPlan
                             ? "bg-primary/10 text-primary hover:bg-primary/20"
                             : "text-muted-foreground/30 hover:text-primary hover:bg-primary/5"
                         }`}
                       >
-                        {inPlan
+                        {inPlan || isFlash
                           ? <BookmarkCheck className="h-3.5 w-3.5" />
                           : <Bookmark className="h-3.5 w-3.5" />
                         }
@@ -266,20 +285,22 @@ const IntelligenceBlock = ({
 
                         {/* Action plan toggle */}
                         <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                          <span className="text-[11px] text-muted-foreground/60 font-medium">
-                            {inPlan ? "Saved to your action plan" : "Track this for later"}
+                          <span className="text-[11px] text-muted-foreground/60 font-medium transition-colors duration-200">
+                            {isFlash ? "✓ Saved to your action plan" : inPlan ? "Saved to your action plan" : "Track this for later"}
                           </span>
                           <button
                             type="button"
-                            onClick={() => onToggleActionPlan?.(f.id)}
-                            className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                              inPlan
+                            onClick={() => handleTogglePlan(f.id)}
+                            className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                              isFlash
+                                ? "bg-primary/15 text-primary scale-105"
+                                : inPlan
                                 ? "bg-primary/10 text-primary hover:bg-primary/15"
                                 : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
                             }`}
                           >
-                            {inPlan ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-                            {inPlan ? "Added to Plan" : "Add to Plan"}
+                            {inPlan || isFlash ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+                            {isFlash ? "Added!" : inPlan ? "Added to Plan" : "Add to Plan"}
                           </button>
                         </div>
                       </div>

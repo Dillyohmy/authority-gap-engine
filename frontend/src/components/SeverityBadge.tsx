@@ -38,7 +38,7 @@ const SeverityBadge = React.forwardRef<HTMLSpanElement, SeverityBadgeProps>(
         ref={ref}
         className={`inline-flex items-center gap-1 font-bold border rounded-full uppercase tracking-[0.06em] whitespace-nowrap ${c.bg} ${c.text} ${
           isSmall ? "text-[10px] px-2 py-0.5" : "text-[11px] px-2.5 py-1"
-        }`}
+        } ${severity === "high" ? "badge-pulse" : ""}`}
       >
         <Icon className={`shrink-0 ${isSmall ? "h-2.5 w-2.5" : "h-3 w-3"}`} />
         {c.label}
