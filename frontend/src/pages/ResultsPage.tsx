@@ -82,13 +82,13 @@ function SectionHeading({ title, subtitle }: { title: string; subtitle?: string 
 }
 
 function SnapshotCard({
-  title, subtitle, score, max, icon, summary, status, onClick, highlight,
+  title, subtitle, score, max, icon, summary, status, onClick, highlight, displayValue,
 }: {
   title: string; subtitle: string; score: number; max: number;
   icon: React.ReactNode; summary: string; status: string;
-  onClick: () => void; highlight?: string;
+  onClick: () => void; highlight?: string; displayValue?: string;
 }) {
-  const pct = score / max;
+  const pct = Math.min(score / max, 1);
   const pctInt = Math.round(pct * 100);
   const numColor = pct >= 0.7 ? "text-success" : pct >= 0.5 ? "text-yellow-600" : pct >= 0.3 ? "text-orange-600" : "text-destructive";
   const barColor = pct >= 0.7 ? "bg-success" : pct >= 0.5 ? "bg-yellow-400" : pct >= 0.3 ? "bg-orange-400" : "bg-destructive";
@@ -107,9 +107,10 @@ function SnapshotCard({
                 <p className="text-[10px] text-muted-foreground">{subtitle}</p>
               </div>
             </div>
-            <span className={`text-[22px] font-extrabold leading-none ${numColor}`}>
-              {pctInt}<span className="text-[11px] font-bold text-muted-foreground">%</span>
-            </span>
+            {displayValue
+              ? <span className="text-[15px] font-extrabold leading-tight text-success text-right max-w-[110px]">{displayValue}</span>
+              : <span className={`text-[22px] font-extrabold leading-none ${numColor}`}>{pctInt}<span className="text-[11px] font-bold text-muted-foreground">%</span></span>
+            }
           </div>
 
           <div className="h-1.5 bg-muted rounded-full">
@@ -727,12 +728,12 @@ const ResultsPage = () => {
               title="Growth Potential"
               subtitle="Revenue Opportunity"
               score={scores.opportunity_score}
-              max={20}
+              max={scores.opportunity_score > 20 ? 100 : 20}
               icon={<TrendingUp className="h-4 w-4" />}
               summary={opportunity.summary}
-              status={getStatusLabel(scores.opportunity_score, 20)}
+              status={getStatusLabel(scores.opportunity_score, scores.opportunity_score > 20 ? 100 : 20)}
               onClick={() => opportunityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              highlight={`$${estimated_revenue_low.toLocaleString()}–$${estimated_revenue_high.toLocaleString()}/mo`}
+              displayValue={`$${estimated_revenue_low.toLocaleString()}–$${estimated_revenue_high.toLocaleString()}/mo`}
             />
           </div>
         </motion.section>
@@ -823,8 +824,8 @@ const ResultsPage = () => {
               subtitle="Patient Revenue Analysis"
               icon={<TrendingUp className="h-4 w-4" />}
               score={scores.opportunity_score}
-              max={20}
-              status={getStatusLabel(scores.opportunity_score, 20)}
+              max={scores.opportunity_score > 20 ? 100 : 20}
+              status={getStatusLabel(scores.opportunity_score, scores.opportunity_score > 20 ? 100 : 20)}
               summary={opportunity.summary}
               sectionRef={opportunityRef}
             >
@@ -834,8 +835,8 @@ const ResultsPage = () => {
                 icon={<TrendingUp className="h-4 w-4" />}
                 section={{
                   score: scores.opportunity_score,
-                  maxScore: 20,
-                  status: getStatusLabel(scores.opportunity_score, 20),
+                  maxScore: scores.opportunity_score > 20 ? 100 : 20,
+                  status: getStatusLabel(scores.opportunity_score, scores.opportunity_score > 20 ? 100 : 20),
                   summary: opportunity.summary,
                   findings: opportunity.findings,
                   systemInsight: opportunity.system_insight,
